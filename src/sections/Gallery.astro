@@ -1,0 +1,9 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import Lightbox from '../components/Lightbox'
+import { wedding } from '../data/wedding'
+---
+<section class="shell py-14 reveal">
+  <SectionLabel en="GALLERY" ko="사진첩" />
+  <Lightbox photos={wedding.gallery} client:visible />
+</section>
