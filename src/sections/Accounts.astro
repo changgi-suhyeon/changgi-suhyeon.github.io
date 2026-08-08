@@ -1,12 +1,11 @@
 ---
 import SectionLabel from '../components/SectionLabel.astro'
 import CopyButton from '../components/CopyButton'
-import Chevron from '../components/Chevron.astro'
 import { privateData } from '../data/private'
 
 // 계좌는 본인·아버지·어머니 등 여러 개가 들어올 수 있어 배열이다.
 // 한쪽 배열이 비면(정상 데이터에서는 일어나지 않지만, 방어적으로) 그쪽
-// <details>를 렌더하지 않는다 — 내용 없는 빈 아코디언을 보여주지 않는다.
+// 카드를 렌더하지 않는다 — 내용 없는 빈 카드를 보여주지 않는다.
 const groups = [
   { title: '신랑측 계좌번호', accounts: privateData.accounts.groom },
   { title: '신부측 계좌번호', accounts: privateData.accounts.bride },
@@ -15,13 +14,15 @@ const groups = [
 <section class="shell py-14 reveal">
   <SectionLabel en="ACCOUNT" ko="마음 전하는 곳" />
 
+  {/* 아코디언이 아니라 카드다. 계좌번호는 하객이 찾으러 오는 정보인데,
+      펼쳐야 보이면 그 자체가 장벽이 된다 — 접힌 상태의 <details>가 섹션
+      제목처럼 읽혀 지나쳐 버린다는 문제도 여기서 함께 사라진다.
+      주석은 반드시 map 표현식 바깥에 둔다. 화살표 함수의 반환 위치에 넣으면
+      Astro 컴파일러가 객체 리터럴로 읽어 `Expected , or ) but found class`로 죽는다. */}
   <div class="space-y-2">
     {groups.map((group) => (
-      <details class="border rounded-lg" style="border-color: var(--line)">
-        <summary class="flex items-center justify-between gap-2 px-4 text-sm cursor-pointer select-none">
-          <span>{group.title}</span>
-          <Chevron />
-        </summary>
+      <div class="border rounded-lg" style="border-color: var(--line)">
+        <p class="px-4 py-3 text-sm">{group.title}</p>
         <ul class="px-4 pb-3">
           {group.accounts.map((account) => (
             <li class="flex items-start justify-between gap-3 py-3 border-t"
@@ -38,7 +39,7 @@ const groups = [
             </li>
           ))}
         </ul>
-      </details>
+      </div>
     ))}
   </div>
 </section>

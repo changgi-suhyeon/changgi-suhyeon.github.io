@@ -1,6 +1,5 @@
 ---
 import SectionLabel from '../components/SectionLabel.astro'
-import Chevron from '../components/Chevron.astro'
 import { wedding } from '../data/wedding'
 import { privateData } from '../data/private'
 
@@ -43,14 +42,10 @@ const parentLine = (side: typeof wedding.groom) =>
     {parentLine(wedding.bride)} <strong style="color: var(--ink)">{wedding.bride.name}</strong>
   </p>
 
-  <details class="mt-8 border rounded-lg" style="border-color: var(--line)">
-    {/* 이 아코디언만 가운데 정렬이다(다른 둘은 목록 안에 있어 좌측 정렬).
-        기존 정렬을 유지한 채 셰브론을 라벨 옆에 붙인다 — 표식은 세 곳이 같고
-        배치만 각 섹션의 레이아웃을 따른다. */}
-    <summary class="flex items-center justify-center gap-2 text-sm cursor-pointer select-none py-3">
-      <span>연락하기</span>
-      <Chevron />
-    </summary>
+  {/* 아코디언이 아니라 카드다. 연락처는 하객이 필요할 때 바로 눌러야 하는 것이라
+      한 단계 펼치게 만들 이유가 없다. 제목은 이 섹션의 다른 요소와 맞춰 가운데 정렬. */}
+  <div class="mt-8 border rounded-lg" style="border-color: var(--line)">
+    <p class="text-center text-sm py-3">연락하기</p>
     {/* 고인이 된 혼주는 목록에서 뺀다. 남겨두면 조문하려던 하객이 전화 버튼을 눌러
         엉뚱한 사람에게 걸거나 없는 번호로 연결된다. 혼주 줄에는 菊과 함께 이름이
         그대로 남으므로 예를 갖추는 자리는 잃지 않는다.
@@ -74,5 +69,5 @@ const parentLine = (side: typeof wedding.groom) =>
         </li>
       ))}
     </ul>
-  </details>
+  </div>
 </section>
