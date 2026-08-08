@@ -1,6 +1,7 @@
 ---
 import SectionLabel from '../components/SectionLabel.astro'
 import CopyButton from '../components/CopyButton'
+import Chevron from '../components/Chevron.astro'
 import { privateData } from '../data/private'
 
 // 계좌는 본인·아버지·어머니 등 여러 개가 들어올 수 있어 배열이다.
@@ -17,8 +18,9 @@ const groups = [
   <div class="space-y-2">
     {groups.map((group) => (
       <details class="border rounded-lg" style="border-color: var(--line)">
-        <summary class="flex items-center px-4 text-sm cursor-pointer select-none">
-          {group.title}
+        <summary class="flex items-center justify-between gap-2 px-4 text-sm cursor-pointer select-none">
+          <span>{group.title}</span>
+          <Chevron />
         </summary>
         <ul class="px-4 pb-3">
           {group.accounts.map((account) => (

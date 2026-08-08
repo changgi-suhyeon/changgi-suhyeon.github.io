@@ -1,5 +1,6 @@
 ---
 import SectionLabel from '../components/SectionLabel.astro'
+import Chevron from '../components/Chevron.astro'
 import { wedding } from '../data/wedding'
 
 const v = wedding.venue
@@ -54,8 +55,9 @@ const accordions = [
     <div class="mt-6 space-y-2">
       {accordions.map((item) => (
         <details class="border rounded-lg" style="border-color: var(--line)">
-          <summary class="flex items-center px-4 text-sm cursor-pointer select-none">
-            {item.title}
+          <summary class="flex items-center justify-between gap-2 px-4 text-sm cursor-pointer select-none">
+            <span>{item.title}</span>
+            <Chevron />
           </summary>
           <div class="px-4 pb-4 text-sm whitespace-pre-line">
             {item.text}

@@ -65,6 +65,14 @@ a, button, summary {
   min-height: 44px;
 }
 
+/* 아코디언 펼침 표식. summary가 display:flex라서 ::marker가 생성되지 않아
+ * (자세한 이유는 components/Chevron.astro 주석 참고) 셰브론을 직접 그린다.
+ * 열리면 뒤집어 상태를 알린다. prefers-reduced-motion에서는 위의 전역 규칙이
+ * transition-duration을 0.01ms로 만들어 회전이 즉시 일어난다 — 의도한 동작이다. */
+details[open] summary .chevron {
+  transform: rotate(180deg);
+}
+
 /* 스크롤 진입 연출.
  *
  * 기본 상태는 '보임'이다. 숨김은 html.js-reveal 아래에서만 걸리고,
