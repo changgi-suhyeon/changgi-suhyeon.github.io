@@ -776,7 +776,17 @@ PUBLIC_KAKAO_JS_KEY=
 env -u WEDDING_PRIVATE npm run build
 ```
 
-Expected: 빌드 **실패**, 메시지에 `WEDDING_PRIVATE 환경변수가 없습니다` 포함
+**⚠️ 이 태스크 시점에는 위 명령이 성공한다. 그것이 정상이다.**
+
+`private.ts`를 **아무도 import하지 않으면** Vite가 그 모듈을 빌드 그래프에 포함하지 않고, `parsePrivateData()`가 실행조차 되지 않는다. 가드 코드는 존재하지만 죽어 있는 상태다. 이 태스크는 데이터 모델만 만들고 소비자는 만들지 않으므로 여기에 해당한다.
+
+따라서 이 시점의 검증은 **가드 로직 자체**를 확인하는 것으로 대신한다:
+
+1. `src/pages/index.astro`에 임시로 `import { privateData } from '../data/private'`와 그 값을 쓰는 한 줄을 넣는다
+2. `env -u WEDDING_PRIVATE npm run build` → **실패**하고 메시지에 `WEDDING_PRIVATE 환경변수가 없습니다`가 나오는지 확인
+3. 임시 코드를 **반드시 되돌린다**
+
+**가드가 실제로 살아나는 시점은 Task 5다** — `Invitation.astro`가 연락처를 위해 `privateData`를 처음 import한다. 그때부터 `WEDDING_PRIVATE`가 없으면 CI 빌드가 진짜로 실패한다. **Task 5 시작 전에 GitHub Secret을 등록해 두어야 한다.**
 
 그다음 `.env`를 만들어 정상 빌드되는지 확인한다:
 
@@ -946,6 +956,18 @@ git commit -m "feat: 예식 전·당일·이후 3상태 D-day 계산 추가"
 **Interfaces:**
 - Consumes: `wedding` (Task 3), `privateData` (Task 3)
 - Produces: `SectionLabel.astro` (props: `en: string`, `ko: string`) — 이후 모든 섹션이 재사용
+
+- [ ] **Step 0: `.env.example`의 빈 계좌 필드를 더미 값으로 채운다**
+
+**이 태스크가 `privateData`를 처음 import하므로, 여기서부터 가드가 실제로 살아난다.** Task 3이 만든 `.env.example`은 계좌의 `bank`/`number`/`holder`가 빈 문자열이라, 그대로 복사해 쓰면 가드가 정확히 그 필드들을 지적하며 빌드를 멈춘다. 템플릿이 자기 검증을 통과하지 못하는 상태다.
+
+`.env.example`의 `WEDDING_PRIVATE` 값에서 계좌 부분을 다음처럼 바꾼다 — **실제처럼 보이지 않는 값**이어야 한다:
+
+```
+"accounts":{"groom":[{"bank":"개발용","number":"000-0000-000000","holder":"신랑","kakaopay":null}],"bride":[{"bank":"개발용","number":"000-0000-000000","holder":"신부","kakaopay":null}]}
+```
+
+바꾼 뒤 `cp .env.example .env && npm run build`가 성공하는지 확인한다. (이미 유효한 `.env`가 있으면 덮어쓰지 말고, `.env.example`만 검증용으로 임시 복사해 확인한 뒤 되돌린다.)
 
 - [ ] **Step 1: SectionLabel.astro 작성**
 
