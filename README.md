@@ -71,6 +71,9 @@ vitest만 돈다).
 
     npm run e2e
 
+**초록이 나왔다면 로그에 빌드 출력이 찍혔는지 반드시 확인한다.** 빌드가 돌지 않았다면 그 실행은
+지금 코드가 아니라 이전 실행이 남긴 `dist/`를 검사한 것이고, 계약이 어긋나도 초록이 나온다.
+
 사전 조건: `marriage-invitation-worker`가 이 저장소와 형제 디렉터리(`../marriage-invitation-worker`)에
 있어야 하고, 그 안에 `.dev.vars`가 있어야 한다(없으면 `.dev.vars.example`을 복사). `wrangler dev`는
 기본이 로컬 모드라 로컬 miniflare D1을 쓴다 — 프로덕션 D1에는 아무것도 쌓이지 않는다.
