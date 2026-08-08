@@ -4,6 +4,7 @@ import {
   NAME_MAX,
   PARTY_MAX,
   type RsvpErrorBody,
+  type RsvpPostResponse,
   type Side,
   type ValidationError,
 } from '../lib/rsvp-contract'
@@ -56,12 +57,22 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
   const widgetRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | undefined>(undefined)
 
+  // localStorage는 쿠키·사이트 데이터를 막은 브라우저와 일부 인앱 웹뷰에서 SecurityError를 던진다.
+  // 여기서 던지면 에러 바운더리가 없어 아일랜드 전체가 언마운트되고 — 즉 RSVP 폼이 통째로 사라진다.
   useEffect(() => {
-    setAlreadySent(localStorage.getItem(STORAGE_KEY) === '1')
+    try {
+      setAlreadySent(localStorage.getItem(STORAGE_KEY) === '1')
+    } catch {
+      setAlreadySent(false)
+    }
   }, [])
 
   // 참석 인원을 줄이면 식사 인원도 따라 줄인다. 서버가 거부할 조합을 애초에 못 만들게 한다.
+  // `partySize < 1`일 때 건너뛰는 가드가 핵심이다. `Number('')`는 0이므로, 하객이 인원을
+  // 1에서 3으로 고치려고 백스페이스를 누르는 순간 partySize가 0이 되고, 가드가 없으면
+  // 그 찰나에 mealCount가 0으로 확정된다. 서버는 0 <= 0 <= 3이라 정상 수락한다.
   useEffect(() => {
+    if (partySize < 1) return
     setMealCount((current) => Math.min(current, partySize))
   }, [partySize])
 
@@ -93,9 +104,17 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
     script.async = true
     script.onload = render
     document.head.appendChild(script)
-  }, [closed])
+    // `status`가 deps에 있어야 done → idle 복귀 시 이펙트가 다시 돌아 위젯을 렌더한다.
+    // `[closed]`만 두면 폼으로 돌아와도 컨테이너가 빈 채 남는다.
+  }, [closed, status])
 
   const errorFor = (field: string) => fieldErrors.find((e) => e.field === field)?.message
+
+  // 화면에 렌더 슬롯이 있는 필드 목록. 여기 없는 필드 에러(turnstileToken, `_` 등)는
+  // 어느 칸에도 표시되지 않아 하객이 "입력값을 확인해 주세요"만 보고 갈 곳을 잃는다.
+  // 그래서 남는 것들은 아래 에러 박스에 함께 출력한다.
+  const RENDERED_FIELDS = ['side', 'name', 'attending', 'partySize', 'mealCount', 'phone', 'message']
+  const unrenderedErrors = fieldErrors.filter((e) => !RENDERED_FIELDS.includes(e.field))
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -120,7 +139,7 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
       })
 
       const raw: unknown = await response.json().catch(() => ({}))
-      const data = raw as Partial<RsvpErrorBody>
+      const data = raw as Partial<RsvpErrorBody & RsvpPostResponse>
 
       // 상태 코드로 분기하지 않는다. 서버가 새 상태 코드(503/500 등)를 추가해도
       // !response.ok 판정 하나로 전부 실패 경로에 걸리게 한다 — 성공으로 새어나가지 않는다.
@@ -135,8 +154,30 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         return
       }
 
-      localStorage.setItem(STORAGE_KEY, '1')
+      // 200인데 본문이 계약과 다르면 저장 여부를 확신할 수 없다. 성공으로 취급하지 않는다.
+      if (data.ok !== true || typeof data.id !== 'number') {
+        setErrorText('전달 결과를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.')
+        setFailCount((n) => n + 1)
+        setStatus('error')
+        window.turnstile?.reset(widgetIdRef.current)
+        tokenRef.current = ''
+        return
+      }
+
+      // 상태를 먼저 확정한 뒤 localStorage를 건드린다. 순서가 반대면,
+      // 저장은 성공했는데 setItem이 던지는 브라우저에서 아래 catch가 그것을 잡아
+      // "전달에 실패했어요"를 띄우고, 하객이 재제출해 중복 행이 생긴다.
       setStatus('done')
+      try {
+        localStorage.setItem(STORAGE_KEY, '1')
+      } catch {
+        // 플래그를 못 남겨도 제출 자체는 성공했다. 조용히 넘어간다.
+      }
+
+      // Turnstile 토큰은 일회용이다. 성공 후에도 비우지 않으면
+      // "수정" 경로에서 소비된 토큰이 재전송돼 서버가 403을 준다.
+      window.turnstile?.reset(widgetIdRef.current)
+      tokenRef.current = ''
     } catch {
       setErrorText('전달에 실패했어요. 통신 상태를 확인하고 다시 시도해 주세요.')
       setFailCount((n) => n + 1)
@@ -162,7 +203,13 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         <p style={{ color: 'var(--ink)' }}>참석 여부를 전달했습니다. 감사합니다.</p>
         <button
           type="button"
-          onClick={() => setStatus('idle')}
+          onClick={() => {
+            // done 화면이 뜨는 동안 폼 서브트리가 언마운트돼 Turnstile 위젯 컨테이너도 사라진다.
+            // widgetIdRef를 비우지 않으면 렌더 이펙트의 가드가 막아 위젯이 영영 안 뜬다.
+            widgetIdRef.current = undefined
+            tokenRef.current = ''
+            setStatus('idle')
+          }}
           className="mt-4 underline"
           style={{ color: 'var(--muted)' }}
         >
@@ -303,6 +350,11 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         <div className="rounded border px-3 py-2 text-xs leading-relaxed"
              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
           <p>{errorText}</p>
+          {/* 렌더 슬롯이 없는 필드 에러를 여기서 건진다. 보안 확인 실패가 대표적인데,
+              이걸 빠뜨리면 하객은 어느 칸도 빨갛지 않은 채 "입력값을 확인하라"는 말만 본다. */}
+          {unrenderedErrors.map((e) => (
+            <p key={e.field} className="mt-1">{e.message}</p>
+          ))}
           {/* 막다른 길을 만들지 않는다. */}
           {failCount >= 2 && (
             <p className="mt-2">
