@@ -55,7 +55,7 @@ Turnstile 장애 시 503, 저장 실패 시 500이 온다(이전에는 후자가
   `--bg #F4F3F0` · `--line #D5D2CA` · `--muted #9B978D` · `--ink #35342F` · `--body #6C6A64`
 - **타이포는 하이브리드다.** 이름·섹션 타이틀·인사글은 명조(Gowun Batang), 본문·라벨·버튼·날짜·주소는 산세리프(Pretendard).
 - **RSVP 폼과 `/admin`은 서브셋 폰트를 쓰지 않는다.** 하객이 입력하는 글자가 서브셋에 없으면 깨진다. 이 두 곳은 시스템 산세리프를 쓴다.
-- 본문 최소 16px, 터치 타겟 최소 44px. 어른 하객 기준이다.
+- 본문 최소 16px, 터치 타겟 최소 44px. 어른 하객 기준이다. **Task 2의 `@theme`가 `text-sm`을 16px, `text-xs`를 14px로 올려두었으므로 그 유틸리티를 쓰면 하한이 자동으로 지켜진다.** 임의값(`text-[13px]` 등)은 스케일을 타지 않으니, 쓸 때마다 그것이 **본문인지 장식인지** 판단할 것 — 장식 오버라인(`THE MARRIAGE OF`)은 11px이 맞고, 사람이 읽어야 하는 안내문은 아니다.
 - `prefers-reduced-motion: reduce`면 모든 진입 애니메이션과 라이트박스 전환을 끈다.
 - **히어로를 제외한 모든 `<section>`에 `reveal` 클래스를 붙인다** (Task 2에서 정의). 히어로에 붙이면 첫 화면이 페이드인하며 LCP가 나빠진다.
 - `100vh`를 쓰지 않는다. 모바일 주소창 때문에 높이가 튄다. `100dvh` 또는 콘텐츠 높이를 쓴다.
@@ -329,10 +329,17 @@ ttf2woff2 < GowunBatang-Regular.ttf > GowunBatang-Regular.woff2
 
 **Tailwind의 소스 범위를 명시적으로 좁힌다.** v4의 자동 콘텐츠 감지는 프로젝트 전체를 훑어서 `docs/`의 계획 문서 코드블록에 있는 클래스명까지 CSS로 생성한다(실측 확인됨 — `grid-cols-7`, `aspect-square`, `tabular-nums` 등이 배포된 CSS에 들어갔다). 문서가 늘수록 커지고, **빌드 산출물이 문서 내용에 의존하게 된다.**
 
+**타입 스케일을 한 단계 올린다.** Tailwind 기본값은 `text-sm` 14px, `text-xs` 12px인데, 이 청첩장의 본문으로는 작다 — 하객 상당수가 부모님 세대이고, 12px 버튼 라벨은 실제로 읽기 어렵다. 여기서 올려두면 **어떤 유틸리티를 써도 14px 아래로 내려가지 않아**, 이후 섹션들이 개별적으로 신경 쓰지 않아도 하한이 지켜진다.
+
 ```css
 @import 'tailwindcss' source(none);
 @source '../**/*.{astro,html,ts,tsx,js,jsx}';
 @import './tokens.css';
+
+@theme {
+  --text-xs: 0.875rem; /* 14px — 버튼·보조 라벨의 하한 */
+  --text-sm: 1rem;     /* 16px — 본문 */
+}
 
 @font-face {
   font-family: 'Gowun Batang';
@@ -1083,7 +1090,7 @@ const chrysanthemum = (deceased?: boolean) => (deceased ? '菊 ' : '')
 <section class="shell py-14">
   <SectionLabel en="INVITATION" ko="모시는 말씀" />
 
-  <p class="font-serif-kr text-center text-[15px] leading-[2.1] whitespace-pre-line"
+  <p class="font-serif-kr text-center text-base leading-[2.1] whitespace-pre-line"
      style="color: var(--ink)">{wedding.greeting}</p>
 
   <div class="w-8 h-px mx-auto my-9" style="background: var(--line)"></div>
@@ -1196,7 +1203,7 @@ const weekdayNames = ['일', '월', '화', '수', '목', '금', '토']
 
   <div class="grid grid-cols-7 gap-1 text-center">
     {weekdayNames.map((name) => (
-      <span class="text-[11px] py-1" style="color: var(--muted)">{name}</span>
+      <span class="text-[13px] py-1" style="color: var(--muted)">{name}</span>
     ))}
     {cells.map((day) => (
       <span
@@ -1245,7 +1252,7 @@ export default function Countdown({ weddingIso }: Props) {
   if (state.phase === 'after') {
     return (
       <p
-        className="mt-9 text-center font-serif-kr text-[15px] leading-[2]"
+        className="mt-9 text-center font-serif-kr text-base leading-[2]"
         style={{ color: 'var(--ink)' }}
       >
         저희 결혼식이 무사히 끝났습니다
@@ -2118,7 +2125,7 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         {status === 'sending' ? '전달 중…' : '전달하기'}
       </button>
 
-      <p className="text-center text-[11px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+      <p className="text-center text-[13px] leading-relaxed" style={{ color: 'var(--muted)' }}>
         입력하신 정보는 예식 준비 목적으로만 사용하며 예식 후 파기합니다.
       </p>
     </form>
@@ -2321,7 +2328,10 @@ export default function CopyButton({ value, label }: Props) {
       </button>
 
       {state === 'failed' && (
-        <span className="text-[11px] text-right" style={{ color: 'var(--muted)' }}>
+        {/* 복사가 실패했을 때 하객이 계좌번호를 얻는 유일한 경로다.
+            카카오톡 인앱 브라우저에서 실제로 발생하며, 이 안내를 못 읽으면
+            축의를 보낼 방법이 없어진다. 작게 만들지 말 것. */}
+        <span className="text-sm text-right" style={{ color: 'var(--muted)' }}>
           자동 복사가 안 돼요. 아래 번호를 길게 눌러 복사해 주세요.
           <br />
           <span className="select-all" style={{ color: 'var(--ink)', userSelect: 'all' }}>
