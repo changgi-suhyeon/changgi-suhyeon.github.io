@@ -8,6 +8,7 @@ import {
   type Side,
   type ValidationError,
 } from '../lib/rsvp-contract'
+import { RSVP_ENDPOINT, TURNSTILE_SITE_KEY } from '../lib/public-env'
 
 declare global {
   interface Window {
@@ -25,8 +26,9 @@ declare global {
   }
 }
 
-const ENDPOINT = import.meta.env.PUBLIC_RSVP_ENDPOINT as string
-const SITE_KEY = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string
+// 값이 비면 프로덕션 빌드를 중단시킨다. 이유는 public-env.ts 주석 참고.
+const ENDPOINT = RSVP_ENDPOINT
+const SITE_KEY = TURNSTILE_SITE_KEY
 const STORAGE_KEY = 'rsvp-submitted'
 
 type Status = 'idle' | 'sending' | 'done' | 'error'

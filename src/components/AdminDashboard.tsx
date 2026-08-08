@@ -1,8 +1,10 @@
 import { useEffect, useState, type SyntheticEvent } from 'react'
 import type { RsvpRecord, RsvpSummary } from '../lib/rsvp-contract'
 import { toCsv } from '../lib/csv'
+import { RSVP_ENDPOINT } from '../lib/public-env'
 
-const ENDPOINT = import.meta.env.PUBLIC_RSVP_ENDPOINT as string
+// 값이 비면 프로덕션 빌드를 중단시킨다. 이유는 public-env.ts 주석 참고.
+const ENDPOINT = RSVP_ENDPOINT
 const TOKEN_KEY = 'rsvp-admin-token'
 
 export default function AdminDashboard() {
