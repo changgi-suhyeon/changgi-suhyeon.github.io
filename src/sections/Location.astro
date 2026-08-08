@@ -6,11 +6,13 @@ const v = wedding.venue
 
 // 빈 href는 깨진 링크를 보여주는 것보다 버튼을 안 그리는 게 낫다.
 // tmap은 좌표가 없어 지금은 항상 빈 문자열이라 여기서 걸러진다.
+// trim()은 공백만 든 값(예: ' ')이 나중에 실수로 들어와도 truthy로 통과해
+// 빈 버튼이 렌더되는 걸 막기 위함이다.
 const mapApps = [
   { name: '카카오맵', href: v.map.kakao },
   { name: '네이버지도', href: v.map.naver },
   { name: '티맵', href: v.map.tmap },
-].filter((app) => app.href)
+].filter((app) => app.href.trim())
 
 // 남은 버튼 수에 맞춰 열 수를 맞춘다. grid-cols-3 그대로 두면 버튼 2개가
 // 어색하게 늘어난다. (Tailwind JIT가 리터럴 클래스명을 스캔하므로
@@ -24,7 +26,7 @@ const accordions = [
   { title: '지하철 · 버스', text: [v.transit.subway, v.transit.bus].filter(Boolean).join('\n\n') },
   { title: '기차', text: [v.transit.train].filter(Boolean).join('\n\n') },
   { title: '자가용 · 주차', text: [v.transit.car, v.transit.parking].filter(Boolean).join('\n\n') },
-].filter((item) => item.text)
+].filter((item) => item.text.trim())
 ---
 <section class="shell py-14 reveal">
   <SectionLabel en="LOCATION" ko="오시는 길" />
@@ -63,7 +65,7 @@ const accordions = [
     </div>
   )}
 
-  {v.tel && (
+  {v.tel.trim() && (
     <a href={`tel:${v.tel}`}
        class="mt-4 flex items-center justify-center rounded border text-sm"
        style="border-color: var(--line); color: var(--ink)">

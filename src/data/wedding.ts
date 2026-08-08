@@ -1,5 +1,10 @@
 import galleryJson from './gallery.json'
 
+// 지도앱 검색에 쓰는 질의. venue.address 전체(건물명 포함)를 넣으면 검색이 어긋날 수 있어
+// 도로명 주소만 쓴다. 두 값은 의도적으로 다르며, 식장이 바뀌면 둘 다 함께 고쳐야 한다.
+// 딥링크는 이 상수에서만 파생되므로 여기 한 곳만 고치면 세 링크가 함께 따라온다.
+const VENUE_SEARCH_QUERY = '서울 동대문구 왕산로 200'
+
 export const wedding = {
   date: '2026-10-31T12:00:00+09:00',
 
@@ -23,8 +28,8 @@ export const wedding = {
     tel: '', // 식장 대표번호 — 개인정보가 아니므로 여기 둔다
     map: {
       // 좌표 없이도 되는 주소 검색 딥링크. 실제 식장 위치로 검색 결과가 뜬다.
-      kakao: 'https://map.kakao.com/link/search/' + encodeURIComponent('서울 동대문구 왕산로 200'),
-      naver: 'https://map.naver.com/p/search/' + encodeURIComponent('서울 동대문구 왕산로 200'),
+      kakao: `https://map.kakao.com/link/search/${encodeURIComponent(VENUE_SEARCH_QUERY)}`,
+      naver: `https://map.naver.com/p/search/${encodeURIComponent(VENUE_SEARCH_QUERY)}`,
       tmap: '', // 티맵 딥링크는 좌표가 필요하다 — 좌표 확보 전까지 비워둔다
       staticImage: '/photos/map.webp', // PLACEHOLDER — 실제 지도 스크린샷으로 교체 필요
     },
