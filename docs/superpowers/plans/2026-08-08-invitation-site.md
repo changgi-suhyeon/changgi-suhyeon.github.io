@@ -1719,7 +1719,27 @@ const accordions = [
 
 - [ ] **Step 3: 지도앱 딥링크 URL 채우기**
 
-`wedding.ts`의 `venue.map`에 실제 URL을 넣는다. 각 지도앱에서 식장을 검색해 공유 링크를 복사한다.
+좌표 없이도 되는 **주소 검색 URL**을 쓴다. 각 지도앱에서 공유 링크를 복사하는 방식은 좌표가 박힌 긴 URL이 나와 주소가 바뀌면 손으로 다시 뽑아야 한다.
+
+**검색 질의를 단일 출처로 둔다.** `wedding.ts` 상단에 상수를 하나 두고 딥링크가 거기서만 파생되게 한다:
+
+```ts
+// 지도앱 검색에 쓰는 질의. venue.address 전체(건물명 포함)를 넣으면 검색이 어긋날 수 있어
+// 도로명 주소만 쓴다. 두 값은 의도적으로 다르며, 식장이 바뀌면 둘 다 함께 고쳐야 한다.
+// 딥링크는 이 상수에서만 파생되므로 여기 한 곳만 고치면 세 링크가 함께 따라온다.
+const VENUE_SEARCH_QUERY = '서울 동대문구 왕산로 200'
+```
+
+```ts
+    map: {
+      kakao: `https://map.kakao.com/link/search/${encodeURIComponent(VENUE_SEARCH_QUERY)}`,
+      naver: `https://map.naver.com/p/search/${encodeURIComponent(VENUE_SEARCH_QUERY)}`,
+      tmap: '', // 티맵 딥링크는 좌표가 필요하다 — 좌표 확보 전까지 비워둔다
+      staticImage: '/photos/map.webp',
+    },
+```
+
+**주소 문자열을 딥링크에 다시 적지 말 것.** 세 곳에 흩어지면 주소를 고칠 때 화면에는 새 주소가 뜨는데 딥링크는 조용히 옛 위치를 가리키게 되고, 타입 검사도 테스트도 그것을 잡지 못한다.
 
 - [ ] **Step 4: index.astro에 Location 추가**
 
