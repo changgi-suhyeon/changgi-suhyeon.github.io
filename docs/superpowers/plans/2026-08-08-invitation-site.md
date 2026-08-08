@@ -777,10 +777,14 @@ PUBLIC_KAKAO_JS_KEY=
 로컬에서 가드를 확인하려면 **`.env`를 실제로 치워야 한다:**
 
 ```bash
-mv .env .env.bak && npm run build; status=$?; mv .env.bak .env; echo "exit=$status"
+mv .env .env.bak
+npm run build || echo "빌드 실패 — 기대한 결과"
+mv .env.bak .env
 ```
 
-`mv`를 되돌리는 부분을 빠뜨리지 말 것. CI에는 `.env` 파일 자체가 없으므로 GitHub Secret만 지우면 재현된다.
+**세 줄을 한 줄로 합치지 말 것.** `&&`나 `;`로 이어 붙이면 중간에서 끊길 때 `.env`가 옮겨진 채 남는다(zsh에서 `status`는 예약 변수라 `status=$?`가 그 자리에서 실패한다 — 실제로 겪었다). 줄을 나누면 마지막 `mv`가 독립적으로 실행된다.
+
+돌린 뒤 `.env`가 제자리에 있는지 반드시 확인할 것. CI에는 `.env` 파일 자체가 없으므로 GitHub Secret만 지우면 재현된다.
 
 **⚠️ 이 태스크 시점에는 위 명령도 성공한다. 그것이 정상이다.**
 
