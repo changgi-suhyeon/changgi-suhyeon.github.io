@@ -1,14 +1,14 @@
 ---
 import SectionLabel from '../components/SectionLabel.astro'
 import Chevron from '../components/Chevron.astro'
+import KakaoMap from '../components/KakaoMap'
 import { wedding } from '../data/wedding'
 
 const v = wedding.venue
 
 // 빈 href는 깨진 링크를 보여주는 것보다 버튼을 안 그리는 게 낫다.
-// tmap은 좌표가 없어 지금은 항상 빈 문자열이라 여기서 걸러진다.
 // trim()은 공백만 든 값(예: ' ')이 나중에 실수로 들어와도 truthy로 통과해
-// 빈 버튼이 렌더되는 걸 막기 위함이다.
+// 빈 버튼이 렌더되는 걸 막기 위함이다. 셋 다 값이 있으면 grid-cols-3이 된다.
 const mapApps = [
   { name: '카카오맵', href: v.map.kakao },
   { name: '네이버지도', href: v.map.naver },
@@ -37,9 +37,18 @@ const accordions = [
     {v.address}
   </p>
 
-  <img src={v.map.staticImage} alt={`${v.name} 위치 지도`}
-       width="960" height="540" loading="lazy" decoding="async"
-       class="mt-6 w-full rounded-lg border" style="border-color: var(--line)" />
+  {/* 정적 이미지를 먼저 깔고 그 위에 인터랙티브 지도를 절대배치한다.
+      순서가 핵심이다 — 지도가 못 뜨는 경로가 여럿이고(키 미설정, 카카오 콘솔에
+      배포 도메인 미등록, 인앱 웹뷰의 스크립트 차단), 그때 하객에게 빈 회색 박스를
+      보여주는 대신 이미지가 그대로 남는다. JS가 아예 없어도 이 <img>는 뜬다.
+      aspect-video로 높이를 미리 확보해야 지도가 0px 높이로 초기화되지 않는다. */}
+  <div class="relative mt-6 w-full aspect-video overflow-hidden rounded-lg border"
+       style="border-color: var(--line)">
+    <img src={v.map.staticImage} alt={`${v.name} 위치 지도`}
+         width="960" height="540" loading="lazy" decoding="async"
+         class="w-full h-full object-cover" />
+    <KakaoMap lat={v.lat} lng={v.lng} label={v.name} client:visible />
+  </div>
 
   {mapApps.length > 0 && (
     <div class:list={['mt-3 grid gap-2', mapGridClass]}>
