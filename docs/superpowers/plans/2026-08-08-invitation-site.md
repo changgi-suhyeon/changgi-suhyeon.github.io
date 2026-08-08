@@ -3084,6 +3084,46 @@ test('성함 없이 제출하면 서버 검증 오류가 인라인으로 뜬다'
   await expect(page.getByText('성함을 입력해 주세요.')).toBeVisible({ timeout: 15_000 })
 })
 
+test('라이트박스: 뒤로가기가 페이지가 아니라 라이트박스만 닫는다', async ({ page }) => {
+  // Task 8에서 headless로 한 번 실증했지만 그 스크립트가 저장소에 남지 않았다.
+  // 이 로직을 다시 건드릴 때 회귀를 잡을 안전망이 여기다.
+  const urlBefore = page.url()
+  await page.getByRole('button', { name: '사진 1 크게 보기' }).click()
+  await expect(page.getByRole('dialog', { name: '사진 크게 보기' })).toBeVisible()
+
+  await page.goBack()
+
+  await expect(page.getByRole('dialog', { name: '사진 크게 보기' })).toBeHidden()
+  expect(page.url()).toBe(urlBefore) // 페이지를 떠나지 않았다
+})
+
+test('라이트박스: 사진을 넘겨도 히스토리가 쌓이지 않는다', async ({ page }) => {
+  await page.getByRole('button', { name: '사진 1 크게 보기' }).click()
+  const lenAfterOpen = await page.evaluate(() => history.length)
+
+  await page.getByRole('button', { name: '다음 사진' }).click()
+  await page.getByRole('button', { name: '다음 사진' }).click()
+
+  // useEffect 의존성이 [index]면 여기서 히스토리가 늘어나고,
+  // 하객이 뒤로가기를 여러 번 눌러야 청첩장으로 돌아온다.
+  expect(await page.evaluate(() => history.length)).toBe(lenAfterOpen)
+
+  await page.goBack()
+  await expect(page.getByRole('dialog', { name: '사진 크게 보기' })).toBeHidden()
+})
+
+test('라이트박스: 버튼으로 닫으면 히스토리 잔여물이 없다', async ({ page }) => {
+  await page.goto('/')
+  const lenBefore = await page.evaluate(() => history.length)
+
+  await page.getByRole('button', { name: '사진 1 크게 보기' }).click()
+  await page.getByRole('button', { name: '닫기' }).click()
+  await expect(page.getByRole('dialog', { name: '사진 크게 보기' })).toBeHidden()
+
+  // 잔여물이 남으면 다음 뒤로가기가 한 번 먹통이 된다.
+  expect(await page.evaluate(() => history.length)).toBe(lenBefore)
+})
+
 test('제출 실패해도 입력값이 남는다', async ({ page }) => {
   await page.getByRole('button', { name: '신랑측' }).click()
   await page.getByLabel('성함').fill('유지되어야함')
@@ -3108,7 +3148,9 @@ Worker 저장소에 `.dev.vars`가 있어야 한다(Worker 계획 Task 1 Step 8�
 npm run e2e
 ```
 
-Expected: 5개 테스트 전부 통과
+Expected: 8개 테스트 전부 통과 (RSVP 5개 + 라이트박스 뒤로가기 3개)
+
+라이트박스 테스트 3개는 `beforeEach`의 RSVP 섹션 스크롤과 무관하므로, 필요하면 별도 `describe` 블록으로 묶어도 된다.
 
 **첫 테스트가 400으로 실패하면 계약이 어긋난 것이다.** 브라우저 개발자 도구 대신 Worker 응답 본문의 `fields` 배열을 보면 어느 필드인지 바로 나온다.
 
