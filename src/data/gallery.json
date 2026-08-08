@@ -1,0 +1,30 @@
+[
+  {
+    "base": "/photos/01",
+    "width": 4032,
+    "height": 3024,
+    "lqip": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAAAQAgCdASoQAAwAA4BaJYgCdAEfZqHmrLMAAP7quYRC6myYxxV6vRk83g6egAAA",
+    "alt": ""
+  },
+  {
+    "base": "/photos/02",
+    "width": 3024,
+    "height": 4032,
+    "lqip": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACQAwCdASoQABUAPu1iqk2/paQiMAgD8B2JQBOmUACNJqbMyCMAAP7ow5Gt1hJpbvaWN0IVM0W671cAAAA=",
+    "alt": ""
+  },
+  {
+    "base": "/photos/03",
+    "width": 5000,
+    "height": 3333,
+    "lqip": "data:image/webp;base64,UklGRjYAAABXRUJQVlA4ICoAAADwAQCdASoQAAsAA4BaJQBOgCP/9L1rOJAA/u1//ogTs0I3t8EQ+MxNcAA=",
+    "alt": ""
+  },
+  {
+    "base": "/photos/04",
+    "width": 3333,
+    "height": 5000,
+    "lqip": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAwCdASoQABgAPu1mqk4ppaOiMAgBMB2JYwCsABnv1GXiLoOf5XwA/t7ndHqR4Vk7+N1YGaJEIbAAAAA=",
+    "alt": ""
+  }
+]

@@ -1,3 +1,5 @@
+import galleryJson from './gallery.json'
+
 export const wedding = {
   date: '2026-10-31T12:00:00+09:00',
 
@@ -38,7 +40,7 @@ export const wedding = {
   shuttle: { departAt: '', boardingPoint: '' }, // 담당자 연락처는 privateData.phones.shuttle
 
   greeting: '',
-  gallery: [] as GalleryPhoto[],
+  gallery: galleryJson as GalleryPhoto[],
   bgm: { src: '', title: '', credit: '' },
 }
 // as const 를 쓰지 않는다. 갤러리 배열이 readonly가 되면 Task 7의 매니페스트 주입과
