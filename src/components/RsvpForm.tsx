@@ -361,7 +361,10 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
       <div ref={widgetRef} className="flex justify-center" />
 
       {status === 'error' && (
-        <div className="rounded border px-3 py-2 text-xs leading-relaxed"
+        // role="alert"이 없으면 스크린리더 사용자는 제출이 실패한 사실을 통보받지
+        // 못한다. 메시지가 제출 버튼 위에 조용히 나타날 뿐이라, 버튼만 다시 누르게 된다.
+        <div role="alert"
+             className="rounded border px-3 py-2 text-xs leading-relaxed"
              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
           <p>{errorText}</p>
           {/* 렌더 슬롯이 없는 필드 에러를 여기서 건진다. 보안 확인 실패가 대표적인데,
