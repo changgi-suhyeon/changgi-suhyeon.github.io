@@ -1,0 +1,10 @@
+---
+import Base from '../layouts/Base.astro'
+import AdminDashboard from '../components/AdminDashboard'
+---
+<Base title="RSVP 조회">
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <main>
+    <AdminDashboard client:only="react" />
+  </main>
+</Base>

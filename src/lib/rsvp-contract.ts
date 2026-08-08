@@ -21,6 +21,11 @@ export interface RsvpSubmission {
 export interface RsvpRecord {
   id: number
   createdAt: string
+  /** epoch ms. `createdAt`은 SQLite `datetime('now')` 결과라 **타임존 표식이 없는 UTC 문자열**이고,
+   *  브라우저가 그것을 로컬 시각으로 파싱해 KST 환경에서 9시간 이르게 표시된다.
+   *  실제로 재현되었다: 서버가 '2026-08-08 12:12:50'을 주는데 제출은 21:12 KST였다.
+   *  화면 표시는 반드시 이 값으로 할 것. */
+  createdMs: number
   side: Side
   name: string
   attending: boolean
@@ -37,6 +42,9 @@ export interface RsvpSummary {
   groomGuests: number
   brideGuests: number
   totalMeals: number
+  /** 동일 (측, 이름)으로 접혀 집계에서 빠진 건수.
+   *  0이 아니면 관리자가 목록을 눈으로 확인해야 한다 — 동측 동명이인이면 실제로 다른 사람이다. */
+  duplicateSubmissions: number
 }
 
 export interface ValidationError {

@@ -30,6 +30,7 @@ const pageUrl = new URL(Astro.url.pathname, Astro.site).href
     <link rel="preload" as="image" href="/photos/hero-1080.webp"
           imagesrcset="/photos/hero-640.webp 640w, /photos/hero-1080.webp 1080w"
           imagesizes="(max-width: 480px) 100vw, 480px" />
+    <slot name="head" />
   </head>
   <body>
     <slot />
