@@ -14,6 +14,40 @@
 
 **설계 문서:** `docs/superpowers/specs/2026-08-08-mobile-wedding-invitation-design.md`
 
+## Worker 구현에서 넘어온 사항
+
+RSVP API는 완료·병합·배포됐다(`marriage-invitation-worker` main, 배포 URL은 `~/Desktop/Project/rsvp-secrets.txt`). 그 과정의 최종 리뷰에서 **사이트 쪽에서 처리해야 할 것들**이 나왔다. 해당 태스크에서 반드시 반영한다.
+
+**C1 — `createdAt`을 그대로 `new Date()`에 넣으면 9시간 어긋난다. (Task 14)**
+D1의 `created_at`은 `datetime('now')` 결과라 **타임존 표식이 없는 UTC 문자열**이다(`2026-08-08 06:23:32`). V8은 이 형식을 **로컬 시각으로** 파싱하므로 KST 환경에서 9시간 밀린 시각이 관리자 화면에 표시된다. "언제 응답했나"로 판단하는 화면에서 조용히 틀린 값이다.
+
+해결: Worker의 `RsvpRecord`에 `createdMs: number`를 추가하고(행에 이미 있는 값이며 PII가 아니다) 사이트는 `new Date(createdMs)`를 쓴다. **두 저장소를 함께 고쳐야 한다** — Worker의 `src/rows.ts`와 `src/contract.ts`, 사이트의 `src/lib/rsvp-contract.ts`.
+
+**C2 — 계약에 응답 타입이 없다. (Task 11)**
+Worker의 `src/contract.ts`에는 요청 타입만 있고 실제 와이어 포맷은 `index.ts` 안에만 암묵적으로 존재한다. 복사해 오기 전에 세 가지를 추가한다:
+
+```ts
+export interface RsvpPostResponse { ok: true; id: number }
+export interface RsvpErrorBody { error: string; fields?: ValidationError[] }
+export interface RsvpListResponse { records: RsvpRecord[]; summary: RsvpSummary }
+```
+
+검증 상수(`NAME_MAX = 20`, `MESSAGE_MAX = 500`, `PARTY_MAX = 10`)도 계약으로 옮긴다. 지금 상태로는 폼이 `maxLength={20}`을 하드코딩하게 되고, 서버 상수가 바뀌면 조용히 어긋난다.
+
+**C3 — 동측 동명이인이 무음 병합된다. (Task 14)**
+설계 §6.2가 정한 중복 제거는 `(측, 이름)` 기준이라, 신랑측 김민수가 두 명이면 **둘이 한 명으로 접히고 뒤 사람의 인원과 식사 수가 사라진다.** 아무 흔적도 남지 않는다. 반대로 `홍길동`과 `홍 길동`은 다른 사람으로 세어 과다 계상된다.
+
+해결: `RsvpSummary`에 `duplicateSubmissions: number`를 추가해 접힌 건수를 노출한다. 0이면 안심, 0이 아니면 관리자가 목록을 눈으로 확인한다. Task 14가 이미 중복 이름을 하이라이트하므로 그것과 맞물린다. **숫자가 조용히 틀리는 것과, 틀릴 수 있다고 알려주는 것의 차이다.**
+
+**C4 — 서버가 503과 500을 새로 반환한다. (Task 11 — 확인 완료, 조치 불필요)**
+Turnstile 장애 시 503, 저장 실패 시 500이 온다(이전에는 후자가 200이었다). Task 11의 폼은 `if (!response.ok)`로 일반 판정하고 `data.error`를 그대로 띄우므로 두 경우 모두 올바르게 처리된다. **상태 코드로 분기하도록 바꾸지 말 것.**
+
+**C5 — 예식 전 확인 항목**
+- 카카오톡 인앱 브라우저에서 RSVP 제출 관통 (설계 §9에 추가됨). Turnstile managed 모드가 인앱 WebView에서 챌린지를 못 띄우면 그 브라우저 하객 전원이 제출 불가가 된다. 위젯 모드는 재배포 없이 바꿀 수 있다
+- `TURNSTILE_REQUIRED` 킬 스위치 동작 확인
+- D1 백업: `wrangler d1 export marriage-invitation --remote --output rsvp-backup-$(date +%F).sql` 을 주 1회. 응답이 D1 한 곳에만 있다
+- 레이트리밋 상한 20 재검토. CGNAT 풀이 20보다 클 수 있다
+
 ## Global Constraints
 
 - 배포 주소는 `https://changgi-suhyeon.github.io/` **루트**다. 유저 페이지 저장소이므로 Astro `base` 설정을 넣지 않는다.
