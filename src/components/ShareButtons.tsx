@@ -11,7 +11,10 @@ declare global {
   }
 }
 
-const KAKAO_KEY = import.meta.env.PUBLIC_KAKAO_JS_KEY as string
+// `.trim()`이 핵심이다. 카카오 콘솔에서 키를 복사해 CI 변수에 붙이면 개행이 딸려오기 쉬운데,
+// 그러면 값이 truthy라 버튼은 렌더되지만 `Kakao.init`이 실패해 영구히 비활성인 버튼이 남는다.
+// 키가 없을 때 버튼을 숨기기로 한 이유가 바로 그 "죽은 버튼"을 피하려는 것이었다.
+const KAKAO_KEY = (import.meta.env.PUBLIC_KAKAO_JS_KEY as string | undefined)?.trim() ?? ''
 // 카카오 개발자 콘솔에서 앱을 만들어야 나오는 값이라 지금은 비어 있다.
 // 죽은(disabled) 버튼을 보여주는 대신 아예 렌더하지 않는다 — 이 프로젝트의
 // 선례(빈 값인 버튼·섹션을 숨기는 방식)를 따른다. 키가 채워지면 자동으로
