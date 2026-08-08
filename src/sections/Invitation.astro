@@ -19,6 +19,14 @@ const people = [
 ]
 
 const chrysanthemum = (deceased?: boolean) => (deceased ? '菊 ' : '')
+
+// 혼주 줄을 프론트매터에서 문자열로 조립한다. 템플릿에서 개행으로 나누면
+// compressHTML:'jsx'가 개행 포함 공백을 통째로 지워 `홍판서 ·춘섬`처럼
+// 가운뎃점 뒤 공백만 사라진다(실측). 여기서 만들면 공백이 문자열의 일부라 안전하다.
+// `{mother.name}의`는 붙여 쓰는 것이 맞다 — 소유격 조사는 이름에 붙는다.
+const parentLine = (side: typeof wedding.groom) =>
+  `${chrysanthemum(side.father.deceased)}${side.father.name} · ` +
+  `${chrysanthemum(side.mother.deceased)}${side.mother.name}의 ${side.order}`
 ---
 <section class="shell py-14 reveal">
   <SectionLabel en="INVITATION" ko="모시는 말씀" />
@@ -29,13 +37,9 @@ const chrysanthemum = (deceased?: boolean) => (deceased ? '菊 ' : '')
   <div class="w-8 h-px mx-auto my-9" style="background: var(--line)"></div>
 
   <p class="text-center text-sm leading-loose">
-    {chrysanthemum(wedding.groom.father.deceased)}{wedding.groom.father.name} ·
-    {chrysanthemum(wedding.groom.mother.deceased)}{wedding.groom.mother.name}
-    의 {wedding.groom.order} <strong style="color: var(--ink)">{wedding.groom.name}</strong>
+    {parentLine(wedding.groom)} <strong style="color: var(--ink)">{wedding.groom.name}</strong>
     <br />
-    {chrysanthemum(wedding.bride.father.deceased)}{wedding.bride.father.name} ·
-    {chrysanthemum(wedding.bride.mother.deceased)}{wedding.bride.mother.name}
-    의 {wedding.bride.order} <strong style="color: var(--ink)">{wedding.bride.name}</strong>
+    {parentLine(wedding.bride)} <strong style="color: var(--ink)">{wedding.bride.name}</strong>
   </p>
 
   <details class="mt-8 border rounded-lg" style="border-color: var(--line)">

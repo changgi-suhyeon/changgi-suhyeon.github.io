@@ -19,11 +19,11 @@ const timeText = minute === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${minut
   </p>
   <div class="w-8 h-px mx-auto my-4" style="background: var(--line)"></div>
 
-  <h1 class="font-serif-kr text-3xl tracking-[0.08em]" style="color: var(--ink)">
-    {wedding.groom.name}
-    <span class="text-lg align-middle" style="color: var(--muted)">·</span>
-    {wedding.bride.name}
-  </h1>
+  {/* 이름과 · 사이의 공백은 반드시 같은 소스 줄에 있어야 한다. Astro 기본값인
+      compressHTML:'jsx'는 개행이 포함된 공백 덩어리를 통째로 삭제한다(JSX 규칙).
+      줄바꿈으로 띄운 것처럼 보이게 두면 `준영·서연`으로 붙어서 나간다.
+      공백은 <span> 바깥에 둔다 — 안에 넣으면 text-lg 크기의 좁은 공백이 된다. */}
+  <h1 class="font-serif-kr text-3xl tracking-[0.08em]" style="color: var(--ink)">{wedding.groom.name} <span class="text-lg align-middle" style="color: var(--muted)">·</span> {wedding.bride.name}</h1>
 
   <p class="mt-5 text-sm leading-loose">
     {y}. {m}. {day}. {weekday} {timeText}<br />
