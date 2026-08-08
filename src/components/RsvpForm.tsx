@@ -178,7 +178,19 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
 
       // Turnstile 토큰은 일회용이다. 성공 후에도 비우지 않으면
       // "수정" 경로에서 소비된 토큰이 재전송돼 서버가 403을 준다.
-      window.turnstile?.reset(widgetIdRef.current)
+      //
+      // reset()은 서드파티(Cloudflare) 코드다. 여기서 던지면 바깥 catch가 받아
+      // setStatus('error')를 부르고, 같은 React 배치 안이라 위의 setStatus('done')을
+      // 덮어쓴다 — D1에 이미 들어간 제출을 두고 하객은 "전달에 실패했어요"를 본다.
+      // 하객은 다시 제출하고(alreadySent는 마운트 때 한 번만 읽으므로 안내도 못 뜬다),
+      // 그때 인원을 "고쳐" 넣으면 최신 행이 이기면서 원래 맞던 인원이 사라진다.
+      // 바로 위 setItem과 같은 이유로 감싼다: 성공 처리를 뒤집지 않는다.
+      try {
+        window.turnstile?.reset(widgetIdRef.current)
+      } catch {
+        // 토큰 초기화 실패는 "수정" 경로에서만 드러나고, 그때 서버가 403을 주면
+        // 하객은 다시 제출할 수 있다. 이미 성공한 제출을 실패로 만드는 것보다 낫다.
+      }
       tokenRef.current = ''
     } catch {
       setErrorText('전달에 실패했어요. 통신 상태를 확인하고 다시 시도해 주세요.')
