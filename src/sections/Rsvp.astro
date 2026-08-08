@@ -1,0 +1,17 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import RsvpForm from '../components/RsvpForm'
+import { wedding } from '../data/wedding'
+import { privateData } from '../data/private'
+import { getDdayState } from '../lib/dday'
+
+// 빌드 시점 판정. 예식 후 재배포하면 폼이 마감 안내로 바뀐다.
+const closed = getDdayState(wedding.date, Date.now()).phase === 'after'
+---
+<section class="shell py-14 reveal" style="background: var(--surface)">
+  <SectionLabel en="RSVP" ko="참석 여부 전달" />
+  <p class="text-center text-sm leading-loose mb-8">
+    식사 준비에 참고하고자 하니<br />편하신 방법으로 알려주세요
+  </p>
+  <RsvpForm closed={closed} fallbackPhone={privateData.phones.groom} client:visible />
+</section>

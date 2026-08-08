@@ -7,6 +7,12 @@
   --ink: #35342f;
   --body: #6c6a64;
 
+  /* RSVP 폼 전용. 카드형 섹션 배경과 입력 필드 배경을 페이지 배경과 구분한다. */
+  --surface: #efede7;
+  --input-bg: #ffffff;
+  /* 폼 에러 상태 전용. */
+  --danger: #b91c1c;
+
   --font-serif-kr: 'Gowun Batang', 'AppleMyungjo', serif;
   --font-sans-kr: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif;
   /* 폼·관리자 전용. 서브셋 폰트를 쓰지 않아 임의 글자가 깨지지 않는다. */
