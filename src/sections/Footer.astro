@@ -1,0 +1,10 @@
+---
+import { wedding } from '../data/wedding'
+const kst = new Date(Date.parse(wedding.date) + 9 * 3600 * 1000)
+const dateText = `${kst.getUTCFullYear()}.${kst.getUTCMonth() + 1}.${kst.getUTCDate()}`
+---
+<footer class="shell py-10 text-center">
+  <p class="font-serif-kr text-xs tracking-[0.14em]" style="color: var(--muted)">
+    {wedding.groom.name} · {wedding.bride.name} &nbsp;|&nbsp; {dateText}
+  </p>
+</footer>

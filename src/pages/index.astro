@@ -9,9 +9,16 @@ import Information from '../sections/Information.astro'
 import Shuttle from '../sections/Shuttle.astro'
 import Rsvp from '../sections/Rsvp.astro'
 import Accounts from '../sections/Accounts.astro'
+import Share from '../sections/Share.astro'
+import Footer from '../sections/Footer.astro'
+import BgmToggle from '../components/BgmToggle'
 import { wedding } from '../data/wedding'
+
+// 카카오톡에 링크가 붙여넣어질 때 스크래퍼가 읽는 og:description의 출처.
+// 비워두면 빈 미리보기가 나가므로 Share 섹션과 같은 문구를 쓴다.
+const description = `${wedding.venue.name} ${wedding.venue.hall}`
 ---
-<Base title={`${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`}>
+<Base title={`${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`} description={description}>
   <main>
     <Hero />
     <Invitation />
@@ -22,5 +29,8 @@ import { wedding } from '../data/wedding'
     <Shuttle />
     <Rsvp />
     <Accounts />
+    <Share />
   </main>
+  <Footer />
+  {wedding.bgm.src && <BgmToggle src={wedding.bgm.src} title={wedding.bgm.title} client:idle />}
 </Base>

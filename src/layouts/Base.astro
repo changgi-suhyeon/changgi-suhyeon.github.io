@@ -4,8 +4,14 @@ import '../styles/global.css'
 interface Props {
   title: string
   description?: string
+  ogImage?: string
 }
-const { title, description = '' } = Astro.props
+const { title, description = '', ogImage = '/photos/og.jpg' } = Astro.props
+// 카카오톡 링크 미리보기(OG 스크래퍼)는 절대 URL만 읽는다. 상대 경로면
+// 이미지를 못 긁는다 — Astro.site가 astro.config.mjs에 반드시 설정돼 있어야
+// 한다(현재 https://changgi-suhyeon.github.io).
+const ogUrl = new URL(ogImage, Astro.site).href
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href
 ---
 <!doctype html>
 <html lang="ko">
@@ -15,6 +21,12 @@ const { title, description = '' } = Astro.props
     <meta name="color-scheme" content="light" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogUrl} />
+    <meta property="og:url" content={pageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="preload" as="image" href="/photos/hero-1080.webp"
           imagesrcset="/photos/hero-640.webp 640w, /photos/hero-1080.webp 1080w"
           imagesizes="(max-width: 480px) 100vw, 480px" />

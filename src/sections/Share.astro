@@ -1,0 +1,14 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import ShareButtons from '../components/ShareButtons'
+import { wedding } from '../data/wedding'
+
+const title = `${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`
+const description = `${wedding.venue.name} ${wedding.venue.hall}`
+const imageUrl = new URL('/photos/og.jpg', Astro.site).href
+const pageUrl = new URL('/', Astro.site).href
+---
+<section class="shell py-14 reveal">
+  <SectionLabel en="SHARE" ko="공유하기" />
+  <ShareButtons title={title} description={description} imageUrl={imageUrl} pageUrl={pageUrl} client:idle />
+</section>
