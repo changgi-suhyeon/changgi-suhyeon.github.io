@@ -18,7 +18,11 @@
 
 RSVP API는 완료·병합·배포됐다(`marriage-invitation-worker` main, 배포 URL은 `~/Desktop/Project/rsvp-secrets.txt`). 그 과정의 최종 리뷰에서 **사이트 쪽에서 처리해야 할 것들**이 나왔다. 해당 태스크에서 반드시 반영한다.
 
-**C1 — `createdAt`을 그대로 `new Date()`에 넣으면 9시간 어긋난다. (Task 14)**
+> **담당 태스크 정리** — C2는 Task 11에서, C1·C3는 Task 14에서 처리한다.
+>
+> C1과 C3는 **두 저장소를 함께 고쳐야 한다.** 사이트가 `createdMs`를 기대하는데 Worker가 안 보내면 `new Date(undefined)` → `Invalid Date`가 되어 9시간 밀림보다 나빠진다. 그래서 실제 소비처인 Task 14에서 Worker 변경과 함께 처리한다. C2는 기존 와이어 포맷을 타입으로 적는 것뿐이라 Worker 변경이 필요 없다.
+
+**C1 — `createdAt`을 그대로 `new Date()`에 넣으면 9시간 어긋난다. (Task 14 — Worker와 함께)**
 D1의 `created_at`은 `datetime('now')` 결과라 **타임존 표식이 없는 UTC 문자열**이다(`2026-08-08 06:23:32`). V8은 이 형식을 **로컬 시각으로** 파싱하므로 KST 환경에서 9시간 밀린 시각이 관리자 화면에 표시된다. "언제 응답했나"로 판단하는 화면에서 조용히 틀린 값이다.
 
 해결: Worker의 `RsvpRecord`에 `createdMs: number`를 추가하고(행에 이미 있는 값이며 PII가 아니다) 사이트는 `new Date(createdMs)`를 쓴다. **두 저장소를 함께 고쳐야 한다** — Worker의 `src/rows.ts`와 `src/contract.ts`, 사이트의 `src/lib/rsvp-contract.ts`.
