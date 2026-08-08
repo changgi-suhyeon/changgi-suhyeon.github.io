@@ -1,0 +1,64 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import { wedding } from '../data/wedding'
+import { privateData } from '../data/private'
+
+const p = privateData.phones
+
+const people = [
+  { label: `신랑 ${wedding.groom.name}`, phone: p.groom },
+  { label: `신랑 아버지 ${wedding.groom.father.name}`, phone: p.groomFather,
+    deceased: wedding.groom.father.deceased },
+  { label: `신랑 어머니 ${wedding.groom.mother.name}`, phone: p.groomMother,
+    deceased: wedding.groom.mother.deceased },
+  { label: `신부 ${wedding.bride.name}`, phone: p.bride },
+  { label: `신부 아버지 ${wedding.bride.father.name}`, phone: p.brideFather,
+    deceased: wedding.bride.father.deceased },
+  { label: `신부 어머니 ${wedding.bride.mother.name}`, phone: p.brideMother,
+    deceased: wedding.bride.mother.deceased },
+]
+
+const chrysanthemum = (deceased?: boolean) => (deceased ? '菊 ' : '')
+---
+<section class="shell py-14 reveal">
+  <SectionLabel en="INVITATION" ko="모시는 말씀" />
+
+  <p class="font-serif-kr text-center text-[15px] leading-[2.1] whitespace-pre-line"
+     style="color: var(--ink)">{wedding.greeting}</p>
+
+  <div class="w-8 h-px mx-auto my-9" style="background: var(--line)"></div>
+
+  <p class="text-center text-sm leading-loose">
+    {chrysanthemum(wedding.groom.father.deceased)}{wedding.groom.father.name} ·
+    {chrysanthemum(wedding.groom.mother.deceased)}{wedding.groom.mother.name}
+    의 {wedding.groom.order} <strong style="color: var(--ink)">{wedding.groom.name}</strong>
+    <br />
+    {chrysanthemum(wedding.bride.father.deceased)}{wedding.bride.father.name} ·
+    {chrysanthemum(wedding.bride.mother.deceased)}{wedding.bride.mother.name}
+    의 {wedding.bride.order} <strong style="color: var(--ink)">{wedding.bride.name}</strong>
+  </p>
+
+  <details class="mt-8 border rounded-lg" style="border-color: var(--line)">
+    <summary class="flex items-center justify-center text-sm cursor-pointer select-none py-3">
+      연락하기
+    </summary>
+    <ul class="px-4 pb-3">
+      {people.map((person) => (
+        <li class="flex items-center justify-between gap-3 py-3 border-t"
+            style="border-color: var(--line)">
+          <span class="text-sm">{person.label}</span>
+          <span class="flex gap-2">
+            <a href={`tel:${person.phone}`}
+               class="flex items-center px-3 rounded border text-xs"
+               style="border-color: var(--line); color: var(--ink)"
+               aria-label={`${person.label}에게 전화`}>전화</a>
+            <a href={`sms:${person.phone}`}
+               class="flex items-center px-3 rounded border text-xs"
+               style="border-color: var(--line); color: var(--ink)"
+               aria-label={`${person.label}에게 문자`}>문자</a>
+          </span>
+        </li>
+      ))}
+    </ul>
+  </details>
+</section>

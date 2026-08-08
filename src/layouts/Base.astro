@@ -15,6 +15,9 @@ const { title, description = '' } = Astro.props
     <meta name="color-scheme" content="light" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    <link rel="preload" as="image" href="/photos/hero-1080.webp"
+          imagesrcset="/photos/hero-640.webp 640w, /photos/hero-1080.webp 1080w"
+          imagesizes="(max-width: 480px) 100vw, 480px" />
   </head>
   <body>
     <slot />

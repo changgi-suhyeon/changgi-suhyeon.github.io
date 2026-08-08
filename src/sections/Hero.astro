@@ -1,0 +1,44 @@
+---
+import { wedding } from '../data/wedding'
+
+const d = new Date(wedding.date)
+const kst = new Date(d.getTime() + 9 * 3600 * 1000)
+const y = kst.getUTCFullYear()
+const m = kst.getUTCMonth() + 1
+const day = kst.getUTCDate()
+const weekday = ['SUN','MON','TUE','WED','THU','FRI','SAT'][kst.getUTCDay()]
+const hour = kst.getUTCHours()
+const minute = kst.getUTCMinutes()
+const ampm = hour < 12 ? '오전' : '오후'
+const h12 = hour % 12 === 0 ? 12 : hour % 12
+const timeText = minute === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${minute}분`
+---
+<section class="shell pt-14 pb-12 text-center">
+  <p class="font-sans-kr text-[11px] tracking-[0.3em]" style="color: var(--muted)">
+    THE MARRIAGE OF
+  </p>
+  <div class="w-8 h-px mx-auto my-4" style="background: var(--line)"></div>
+
+  <h1 class="font-serif-kr text-3xl tracking-[0.08em]" style="color: var(--ink)">
+    {wedding.groom.name}
+    <span class="text-lg align-middle" style="color: var(--muted)">·</span>
+    {wedding.bride.name}
+  </h1>
+
+  <p class="mt-5 text-sm leading-loose">
+    {y}. {m}. {day}. {weekday} {timeText}<br />
+    {wedding.venue.name} {wedding.venue.hall}
+  </p>
+
+  <img
+    src="/photos/hero-1080.webp"
+    srcset="/photos/hero-640.webp 640w, /photos/hero-1080.webp 1080w, /photos/hero-1620.webp 1620w"
+    sizes="(max-width: 480px) 100vw, 480px"
+    width="1080"
+    height="1440"
+    alt=""
+    fetchpriority="high"
+    decoding="async"
+    class="mt-9 w-full rounded-t-full"
+  />
+</section>

@@ -1,0 +1,9 @@
+---
+interface Props { en: string; ko: string }
+const { en, ko } = Astro.props
+---
+<header class="text-center mb-8">
+  <p class="font-sans-kr text-[11px] tracking-[0.3em]" style="color: var(--muted)">{en}</p>
+  <div class="w-8 h-px mx-auto my-4" style="background: var(--line)"></div>
+  <h2 class="font-serif-kr text-xl tracking-[0.06em]" style="color: var(--ink)">{ko}</h2>
+</header>
