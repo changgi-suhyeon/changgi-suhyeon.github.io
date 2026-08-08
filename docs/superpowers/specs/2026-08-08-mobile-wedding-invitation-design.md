@@ -88,7 +88,8 @@ R2가 정당해지는 조건(대역폭 폭증, 잦은 사진 교체)이 모두 �
 
 ```
 ├─ src/
-│  ├─ data/wedding.ts          # 예식 정보 단일 소스
+│  ├─ data/wedding.ts          # 공개 콘텐츠 단일 소스
+│  ├─ data/private.ts          # 민감 정보 주입 + 누락 시 빌드 중단 가드
 │  ├─ pages/
 │  │  ├─ index.astro
 │  │  └─ admin.astro
@@ -101,6 +102,7 @@ R2가 정당해지는 조건(대역폭 폭증, 잦은 사진 교체)이 모두 �
 ├─ scripts/optimize-photos.ts
 ├─ public/photos/
 ├─ docs/superpowers/specs/
+├─ .env.example                # WEDDING_PRIVATE 형태 (더미 값)
 └─ .github/workflows/deploy.yml
 ```
 
@@ -375,35 +377,78 @@ CORS는 와일드카드가 아닌 정확한 origin만 허용한다. 관리자 �
 
 ## 7. 콘텐츠 데이터 모델
 
-`src/data/wedding.ts`를 단일 소스로 둔다. 예식 날짜 하나가 히어로·캘린더·D-day·공지·OG 메타에 모두 등장하므로, 하드코딩하면 시간이 변경될 때 다섯 군데를 고쳐야 하고 하나라도 놓치면 그대로 하객에게 나간다.
+콘텐츠는 **저장소에 두는 것**과 **빌드 시 주입하는 것**으로 나눈다.
+
+### 7.1 공개 콘텐츠 — `src/data/wedding.ts`
+
+예식 날짜 하나가 히어로·캘린더·D-day·공지·OG 메타에 모두 등장한다. 하드코딩하면 시간이 변경될 때 다섯 군데를 고쳐야 하고, 하나라도 놓치면 그대로 하객에게 나간다. 따라서 단일 소스로 둔다.
 
 ```ts
 export const wedding = {
   date: '2026-10-31T12:00:00+09:00',
 
-  groom: { name: '', phone: '',
-           father: { name: '', phone: '', deceased: false },
-           mother: { name: '', phone: '', deceased: false },
-           order: '장남' },
+  groom: { name: '', order: '장남',
+           father: { name: '', deceased: false },
+           mother: { name: '', deceased: false } },
   bride: { /* 동일 구조 */ },
 
   venue: {
     name: 'L65호텔웨딩컨벤션',
     hall: '타워동 6층 가든홀',
     address: '서울 동대문구 왕산로 200 청량리역 롯데캐슬스카이-L65',
-    tel: '',
+    tel: '',                            // 식장 대표번호 — 개인정보 아님
     map: { kakao: '', naver: '', tmap: '', staticImage: '' },
     transit: { subway: '', bus: '', train: '', car: '', parking: '' },
   },
 
   meal: { type: '', hours: '', reception: null },
-  shuttle: { departAt: '', boardingPoint: '', contact: '' },
-  accounts: { groom: [], bride: [] },   // { bank, number, holder, kakaopay? }
+  shuttle: { departAt: '', boardingPoint: '' },   // 담당자 연락처는 §7.2
   gallery: [],                          // { src, width, height, lqip, alt }
   greeting: '',
   bgm: { src: '', title: '', credit: '' },
 } as const
 ```
+
+### 7.2 민감 정보 — 빌드 타임 주입
+
+**저장소에 넣지 않는 것: 개인 휴대폰 번호 6~7개(신랑·신부·혼주 4명·전세버스 담당자)와 계좌 정보 전부.**
+
+사이트가 이 정보를 하객에게 보여주는 것은 설계 전제이지만, public 저장소에 평문으로 두는 것은 성격이 다르다. raw URL로 기계가 즉시 수집할 수 있고, **git history는 지워지지 않아** 나중에 값을 빼도 커밋 로그에 영구히 남는다.
+
+private 저장소는 해법이 아니다. GitHub Free는 private 저장소에서 Pages를 공개 배포할 수 없다.
+
+**주입 방식** — 단일 JSON 환경변수 `WEDDING_PRIVATE`.
+
+```jsonc
+{
+  "phones": {
+    "groom": "", "groomFather": "", "groomMother": "",
+    "bride": "", "brideFather": "", "brideMother": "",
+    "shuttle": ""
+  },
+  "accounts": {
+    "groom": [{ "bank": "", "number": "", "holder": "", "kakaopay": null }],
+    "bride": [{ "bank": "", "number": "", "holder": "", "kakaopay": null }]
+  }
+}
+```
+
+- **로컬** — `.env`(gitignore됨). 형태는 `.env.example`에 더미 값으로 커밋한다.
+- **CI** — GitHub Secrets → Actions 빌드 스텝 환경변수.
+
+값은 **빌드 산출물에만 존재하고 git에는 한 번도 들어가지 않는다.** Actions 배포는 아티팩트를 Pages로 직접 업로드할 뿐 저장소에 커밋하지 않으므로 이 분리가 성립한다.
+
+**`PUBLIC_` 접두사를 쓰지 않는다.** 접두사가 붙으면 Astro가 클라이언트 번들 전역에 인라인한다. 대신 `.astro`에서 빌드 타임에 읽어 필요한 아일랜드에만 props로 내려보낸다. 표시되는 값이라 최종 HTML에는 어차피 담기지만, 노출 범위를 실제 사용처로 좁힌다.
+
+**이 설계의 함정과 대응** — 환경변수가 없으면 계좌번호가 빈 문자열인 사이트가 **조용히 배포된다.** 하객이 축의를 보내려다 빈 칸을 보게 되는데, 이 실패는 아무 에러도 내지 않는다.
+
+따라서 `src/data/private.ts`는 다음을 강제한다:
+
+- 프로덕션 빌드에서 `WEDDING_PRIVATE`가 없거나 JSON 파싱에 실패하면 **빌드를 중단한다.**
+- 구조 검증을 통과하지 못해도(필수 키 누락, 계좌 배열이 빔) **빌드를 중단한다.**
+- 개발 모드에서만 눈에 띄는 더미 값으로 대체한다. 더미 값은 실제처럼 보이지 않아야 한다(예: `000-0000-0000`).
+
+즉 **잘못된 배포보다 실패한 빌드가 낫다.**
 
 ---
 
@@ -429,6 +474,9 @@ export const wedding = {
 ## 9. 런칭 체크리스트
 
 - [ ] `wedding.ts` 전 항목 실제 값으로 교체 (플레이스홀더 잔존 여부 확인)
+- [ ] GitHub Secrets에 `WEDDING_PRIVATE` 등록
+- [ ] **`WEDDING_PRIVATE` 없이 프로덕션 빌드 시 실제로 실패하는지 확인** — 가드가 동작하지 않으면 §7.2의 보호가 통째로 무의미하다
+- [ ] 배포된 사이트에서 계좌번호·전화번호가 더미가 아닌 실제 값으로 렌더되는지 확인
 - [ ] 예식 시각이 히어로·캘린더·D-day·OG에서 모두 일치
 - [ ] 카카오 개발자 콘솔에 `https://changgi-suhyeon.github.io` 도메인 등록
 - [ ] Worker CORS 허용 목록에 `https://changgi-suhyeon.github.io` 등록
@@ -450,11 +498,13 @@ export const wedding = {
 | 항목 | 상태 |
 |---|---|
 | 갤러리 사진 장수 | 미정. 장수 무관 동작하도록 구현 |
-| 신랑·신부·혼주 성함 및 연락처 | 미정 |
-| 계좌 정보 | 미정 |
+| 신랑·신부·혼주 성함 | 미정 — `wedding.ts` |
+| 개인 휴대폰 번호 | 미정 — **`WEDDING_PRIVATE` (§7.2)** |
+| 계좌 정보 | 미정 — **`WEDDING_PRIVATE` (§7.2)** |
 | 대중교통·주차 세부 정보 | 미정 |
 | 식사 형태, 피로연 유무 | 미정 |
-| 전세버스 출발 시각·승차 장소·담당자 | 미정 |
+| 전세버스 출발 시각·승차 장소 | 미정 — `wedding.ts` |
+| 전세버스 담당자 연락처 | 미정 — **`WEDDING_PRIVATE` (§7.2)** |
 | 인사글 문구 | 미정 |
 | BGM 음원 | 미정 (로열티 프리 필요) |
 
