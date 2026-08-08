@@ -98,6 +98,16 @@ html.js-reveal .reveal.is-visible {
   transform: none;
 }
 
+/* 라이트박스에서 큰 사진을 기다리는 동안 도는 표시.
+ * 1620w는 평균 250KB라 폰에서 눈에 띄게 걸리고, 그동안 화면이 그대로면
+ * 하객은 버튼이 안 눌린 줄 알고 다시 누른다. */
+@keyframes lightbox-spin {
+  to { transform: rotate(360deg); }
+}
+.lightbox-spinner {
+  animation: lightbox-spin 0.8s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -105,4 +115,11 @@ html.js-reveal .reveal.is-visible {
     scroll-behavior: auto !important;
   }
   html.js-reveal .reveal { opacity: 1; transform: none; }
+
+  /* 위 전역 규칙이 회전을 멈추면 위쪽만 밝은 테두리가 '고장 나 멈춘 스피너'처럼 보인다.
+   * 테두리를 균일하게 만들어 정지한 표시로 읽히게 한다. 인라인 style로 지정한
+   * border-top-color를 이겨야 하므로 !important가 필요하다. */
+  .lightbox-spinner {
+    border-color: rgba(255, 255, 255, 0.45) !important;
+  }
 }

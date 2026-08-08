@@ -152,3 +152,153 @@ test.describe('라이트박스', () => {
     expect(stateAfterClose).toEqual(stateBefore)
   })
 })
+
+// 스와이프는 폰에서만 쓰는 경로다. 데스크톱 기본 컨텍스트는 hasTouch가 false라
+// TouchEvent 생성 자체가 막히므로, 이 describe만 터치 가능한 컨텍스트로 돌린다.
+test.describe('라이트박스 스와이프', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+
+  /**
+   * 오버레이에 touchstart/touchend를 합성해 스와이프를 흉내 낸다.
+   * Playwright의 touchscreen.tap()은 탭만 되고 이동 궤적을 만들 수 없다.
+   * React 이벤트 시스템은 루트에 위임되어 있어 합성 DOM 이벤트도 정상적으로 받는다.
+   */
+  async function swipe(page: import('@playwright/test').Page, dx: number, dy: number) {
+    await page.evaluate(
+      ([dx, dy]) => {
+        const el = document.querySelector('[role="dialog"]')
+        if (!el) throw new Error('라이트박스가 열려 있지 않다')
+        const from = { x: 200, y: 400 }
+        const touch = (x: number, y: number) =>
+          new Touch({ identifier: 1, target: el, clientX: x, clientY: y })
+        el.dispatchEvent(
+          new TouchEvent('touchstart', {
+            bubbles: true,
+            touches: [touch(from.x, from.y)],
+            changedTouches: [touch(from.x, from.y)],
+          }),
+        )
+        const to = touch(from.x + dx, from.y + dy)
+        el.dispatchEvent(
+          new TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [to] }),
+        )
+      },
+      [dx, dy],
+    )
+  }
+
+  const counter = (page: import('@playwright/test').Page) =>
+    page.getByRole('dialog').locator('p').last()
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+  })
+
+  test('왼쪽으로 스와이프하면 다음 사진으로 넘어간다', async ({ page }) => {
+    await openLightbox(page, '사진 1 크게 보기')
+    await expect(counter(page)).toContainText('1 /')
+
+    await swipe(page, -120, 0)
+
+    await expect(counter(page)).toContainText('2 /')
+    // 스와이프에 딸려온 click이 라이트박스를 닫아버리면 안 된다.
+    await expect(page.getByRole('dialog', { name: '사진 크게 보기' })).toBeVisible()
+  })
+
+  test('오른쪽으로 스와이프하면 이전 사진으로 돌아간다', async ({ page }) => {
+    await openLightbox(page, '사진 3 크게 보기')
+    await expect(counter(page)).toContainText('3 /')
+
+    await swipe(page, 120, 0)
+
+    await expect(counter(page)).toContainText('2 /')
+  })
+
+  // 사선 제스처를 사진 이동으로 오인하면 하객이 의도하지 않은 사진으로 튄다.
+  test('세로 이동이 더 큰 제스처로는 사진이 바뀌지 않는다', async ({ page }) => {
+    await openLightbox(page, '사진 2 크게 보기')
+    await expect(counter(page)).toContainText('2 /')
+
+    await swipe(page, 60, 200)
+
+    await expect(counter(page)).toContainText('2 /')
+  })
+
+  // 임계값 미만은 넘기려던 게 아니라 탭이다.
+  test('짧은 이동으로는 사진이 바뀌지 않는다', async ({ page }) => {
+    await openLightbox(page, '사진 2 크게 보기')
+
+    await swipe(page, -20, 0)
+
+    await expect(counter(page)).toContainText('2 /')
+  })
+
+  test('스와이프로 넘겨도 히스토리가 쌓이지 않는다', async ({ page }) => {
+    await openLightbox(page, '사진 1 크게 보기')
+    const lenAfterOpen = await page.evaluate(() => history.length)
+
+    await swipe(page, -120, 0)
+    await swipe(page, -120, 0)
+    await expect(counter(page)).toContainText('3 /')
+
+    expect(await page.evaluate(() => history.length)).toBe(lenAfterOpen)
+    await page.goBack()
+    await expect(page.getByRole('dialog', { name: '사진 크게 보기' })).toBeHidden()
+  })
+})
+
+test.describe('라이트박스 로딩 표시', () => {
+  // 로컬 미리보기는 1620w를 즉시 주므로 스피너가 뜰 창이 없다. 응답을 일부러
+  // 늦춰서 하객의 폰(평균 250KB, 모바일 회선)과 같은 상황을 만든다.
+  // 이 지연이 없으면 "스피너가 안 보인다"는 단언이 스피너를 지워도 통과한다.
+  test('큰 사진을 받는 동안 스피너가 뜨고, 다 받으면 사라진다', async ({ page }) => {
+    let release: (() => void) | null = null
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+
+    await page.route('**/photos/*-1620.webp', async (route) => {
+      await held
+      await route.continue()
+    })
+
+    await page.goto('/')
+    await openLightbox(page, '사진 1 크게 보기')
+
+    const spinner = page.getByRole('status', { name: '사진 불러오는 중' })
+    await expect(spinner).toBeVisible()
+
+    release!()
+    await expect(spinner).toBeHidden({ timeout: 15_000 })
+  })
+
+  // 사진마다 LightboxImage를 key로 새로 마운트하므로 loaded가 자연히 false에서
+  // 시작한다. 부모에 상태를 두고 useEffect로 되돌리면 렌더와 이펙트 사이에 onLoad가
+  // 끼어들 수 있고, 그러면 **다 받은 사진 위에서 스피너가 영원히 돈다.**
+  test('사진을 넘길 때마다 스피너가 다시 떴다가 사라진다', async ({ page }) => {
+    let holding = true
+    await page.route('**/photos/*-1620.webp', async (route) => {
+      while (holding) await new Promise((r) => setTimeout(r, 50))
+      await route.continue()
+    })
+
+    await page.goto('/')
+    await openLightbox(page, '사진 1 크게 보기')
+
+    const spinner = page.getByRole('status', { name: '사진 불러오는 중' })
+    await expect(spinner).toBeVisible()
+
+    holding = false
+    await expect(spinner).toBeHidden({ timeout: 15_000 })
+
+    // 다음 사진 — 프리페치로 이미 캐시에 있을 수 있는 상황이다.
+    await page.getByRole('button', { name: '다음 사진' }).click()
+    await expect(page.getByRole('dialog').locator('p').last()).toContainText('2 /')
+    await expect(spinner).toBeHidden({ timeout: 15_000 })
+
+    // 1번으로 복귀 — 확실히 캐시에 있는 사진이다. 여기서 스피너가 남으면 버그다.
+    await page.getByRole('button', { name: '이전 사진' }).click()
+    await expect(page.getByRole('dialog').locator('p').last()).toContainText('1 /')
+    await expect(spinner).toBeHidden({ timeout: 15_000 })
+  })
+})
