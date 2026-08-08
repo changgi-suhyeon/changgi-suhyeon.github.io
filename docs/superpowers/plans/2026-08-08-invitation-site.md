@@ -182,7 +182,11 @@ Expected: `dist/index.html` 생성, 오류 없음
 
 - [ ] **Step 9: .github/workflows/deploy.yml 생성**
 
-`configure-pages`의 `enablement: true`가 GitHub Pages를 자동으로 켠다. 대시보드에서 따로 설정할 필요가 없다.
+GitHub은 `<user>.github.io` 저장소를 만들면 Pages를 **자동으로 켜되 `build_type: legacy`**(브랜치 기반 Jekyll)로 설정한다. 그 상태에서는 Jekyll이 `README.md`를 렌더해 서빙한다 — 실제로 그렇게 되어 있었다.
+
+**이 저장소는 이미 `build_type: workflow`로 전환해 두었다**(`gh api -X PUT .../pages -f build_type=workflow`). 따라서 아래 워크플로가 처음 돌면 Astro 산출물이 서빙된다. `configure-pages`의 `enablement: true`는 그대로 두되, 켜는 역할이 아니라 멱등 보증용이다.
+
+첫 배포 전까지 Pages `status`는 `errored`로 보이는데 정상이다 — 워크플로가 한 번도 성공하지 않았기 때문이며, 첫 성공에 해소된다.
 
 ```yaml
 name: Deploy to GitHub Pages
