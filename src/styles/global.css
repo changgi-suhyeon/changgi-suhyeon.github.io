@@ -1,4 +1,5 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+@source '../**/*.{astro,html,ts,tsx,js,jsx}';
 @import './tokens.css';
 
 @font-face {
@@ -55,13 +56,27 @@ a, button, summary {
   min-height: 44px;
 }
 
-/* 스크롤 진입 연출. 기본은 보이는 상태이므로 JS가 실패해도 콘텐츠가 사라지지 않는다. */
+/* 스크롤 진입 연출.
+ *
+ * 기본 상태는 '보임'이다. 숨김은 html.js-reveal 아래에서만 걸리고,
+ * 그 클래스는 스크립트가 IntersectionObserver를 성공적으로 세운 뒤에만 붙는다.
+ * 따라서 JS가 비활성화됐든, 차단됐든, 도중에 예외를 던졌든
+ * 콘텐츠는 항상 보인다 — 연출만 사라진다.
+ *
+ * 반대로 하면(기본 숨김 + JS가 보이게) 스크립트 하나가 죽는 순간
+ * 하객이 백지를 보게 된다. 그 방향으로 만들지 말 것. */
 .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+html.js-reveal .reveal {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 700ms ease-out, transform 700ms ease-out;
 }
-.reveal.is-visible {
+
+html.js-reveal .reveal.is-visible {
   opacity: 1;
   transform: none;
 }
@@ -72,5 +87,5 @@ a, button, summary {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .reveal { opacity: 1; transform: none; }
+  html.js-reveal .reveal { opacity: 1; transform: none; }
 }

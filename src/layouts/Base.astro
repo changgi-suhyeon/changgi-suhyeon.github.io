@@ -19,25 +19,29 @@ const { title, description = '' } = Astro.props
   <body>
     <slot />
     <script is:inline>
-      // reduce 설정이면 아무것도 하지 않는다. CSS가 이미 보이는 상태로 두었다.
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      // 숨김은 html.js-reveal 이 붙은 뒤에만 걸린다. 이 스크립트가 한 줄도 못 돌거나
+      // 도중에 던지면 클래스가 안 붙고, 콘텐츠는 CSS 기본값대로 보인 채 남는다.
+      try {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) throw 0
+        if (!('IntersectionObserver' in window)) throw 0
+
         const targets = document.querySelectorAll('.reveal')
-        if ('IntersectionObserver' in window) {
-          const observer = new IntersectionObserver(
-            (entries) => {
-              for (const entry of entries) {
-                if (!entry.isIntersecting) continue
-                entry.target.classList.add('is-visible')
-                observer.unobserve(entry.target) // 한 번만
-              }
-            },
-            { rootMargin: '0px 0px -10% 0px' },
-          )
-          targets.forEach((el) => observer.observe(el))
-        } else {
-          // 미지원 브라우저에서는 그냥 보여준다.
-          targets.forEach((el) => el.classList.add('is-visible'))
-        }
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue
+              entry.target.classList.add('is-visible')
+              observer.unobserve(entry.target) // 한 번만
+            }
+          },
+          { rootMargin: '0px 0px -10% 0px' },
+        )
+
+        // 관찰 준비가 끝난 뒤에야 숨김을 켠다 — 순서를 바꾸지 말 것.
+        document.documentElement.classList.add('js-reveal')
+        targets.forEach((el) => observer.observe(el))
+      } catch {
+        // 아무것도 하지 않는다. 연출만 없고 콘텐츠는 그대로 보인다.
       }
     </script>
   </body>
