@@ -61,6 +61,55 @@ describe('parsePrivateData — 프로덕션', () => {
   })
 })
 
+// 고인이 된 혼주에게는 전화번호가 없다. 일곱 키를 모두 필수로 요구하면 유족이
+// 없는 번호를 지어내야 하고, 그 번호가 청첩장에 탭 가능한 버튼으로 실린다.
+describe('parsePrivateData — 고인 혼주의 전화번호', () => {
+  const REQUIRED_WITHOUT_GROOM_FATHER = [
+    'groom', 'groomMother', 'bride', 'brideFather', 'brideMother', 'shuttle',
+  ] as const
+
+  it('필수에서 뺀 키는 빈 문자열이어도 통과한다', () => {
+    const blank = JSON.parse(complete)
+    blank.phones.groomFather = ''
+    const data = parsePrivateData(
+      JSON.stringify(blank), true, REQUIRED_WITHOUT_GROOM_FATHER,
+    )
+    expect(data.phones.groomFather).toBe('')
+  })
+
+  it('필수에서 뺀 키는 아예 없어도 통과하고 빈 문자열로 정규화된다', () => {
+    const missing = JSON.parse(complete)
+    delete missing.phones.groomFather
+    const data = parsePrivateData(
+      JSON.stringify(missing), true, REQUIRED_WITHOUT_GROOM_FATHER,
+    )
+    expect(data.phones.groomFather).toBe('')
+  })
+
+  it('공백만 든 값도 빈 문자열로 정규화된다 — tel: 링크가 공백으로 만들어지지 않는다', () => {
+    const spaces = JSON.parse(complete)
+    spaces.phones.groomFather = '   '
+    const data = parsePrivateData(
+      JSON.stringify(spaces), true, REQUIRED_WITHOUT_GROOM_FATHER,
+    )
+    expect(data.phones.groomFather).toBe('')
+  })
+
+  it('여전히 필수인 다른 키가 비면 던진다 — 완화가 전체로 번지지 않는다', () => {
+    const blank = JSON.parse(complete)
+    blank.phones.brideMother = ''
+    expect(() =>
+      parsePrivateData(JSON.stringify(blank), true, REQUIRED_WITHOUT_GROOM_FATHER),
+    ).toThrow(/brideMother/)
+  })
+
+  it('기본값은 일곱 키 전부 필수다 — 인자를 안 주면 예전 그대로 엄격하다', () => {
+    const blank = JSON.parse(complete)
+    blank.phones.groomFather = ''
+    expect(() => parsePrivateData(JSON.stringify(blank), true)).toThrow(/groomFather/)
+  })
+})
+
 describe('parsePrivateData — 개발', () => {
   it('값이 없으면 더미로 대체한다', () => {
     const data = parsePrivateData(undefined, false)

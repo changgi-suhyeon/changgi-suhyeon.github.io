@@ -1,3 +1,5 @@
+import { wedding } from './wedding'
+
 export type PhoneKey =
   | 'groom' | 'groomFather' | 'groomMother'
   | 'bride' | 'brideFather' | 'brideMother'
@@ -36,8 +38,17 @@ const DEV_FALLBACK: PrivateData = {
  * 값이 없거나 불완전한 채로 프로덕션 빌드가 성공하면
  * 계좌번호가 빈 사이트가 조용히 배포된다. 그래서 던진다.
  * 잘못된 배포보다 실패한 빌드가 낫다.
+ *
+ * `requiredPhoneKeys`는 "비어 있으면 빌드를 중단할 키" 목록이다. 고인이 된 혼주에게는
+ * 전화번호가 없는데 일곱 키를 모두 필수로 요구하면 유족이 없는 번호를 지어내야 하고,
+ * 그렇게 지어낸 번호가 청첩장에 탭 가능한 버튼으로 실린다(I3). 정책을 인자로 받아
+ * 이 함수 자체는 순수한 파서로 남긴다 — 정책은 아래 모듈 수준 배선에서 정한다.
  */
-export function parsePrivateData(raw: string | undefined, isProd: boolean): PrivateData {
+export function parsePrivateData(
+  raw: string | undefined,
+  isProd: boolean,
+  requiredPhoneKeys: readonly PhoneKey[] = PHONE_KEYS,
+): PrivateData {
   if (raw === undefined || raw.trim() === '') {
     if (isProd) {
       throw new Error(
@@ -64,7 +75,12 @@ export function parsePrivateData(raw: string | undefined, isProd: boolean): Priv
   for (const key of PHONE_KEYS) {
     const value = (phones as Record<string, unknown>)[key]
     if (typeof value !== 'string' || value.trim() === '') {
-      throw new Error(`WEDDING_PRIVATE.phones.${key} 가 비어 있습니다.`)
+      if (requiredPhoneKeys.includes(key)) {
+        throw new Error(`WEDDING_PRIVATE.phones.${key} 가 비어 있습니다.`)
+      }
+      // 필수가 아닌 키(고인이 된 혼주)는 비어 있어도 된다. 빈 문자열로 정규화해
+      // 소비자가 `undefined`와 `''`를 따로 다루지 않게 한다.
+      ;(phones as Record<string, string>)[key] = ''
     }
   }
 
@@ -90,7 +106,20 @@ export function parsePrivateData(raw: string | undefined, isProd: boolean): Priv
   return data as PrivateData
 }
 
+// 고인이 된 혼주의 전화번호 키는 필수에서 뺀다. 공개 데이터(wedding.ts)를 읽어
+// 비밀값의 검증 정책을 정하는 방향이라 의존은 한 방향뿐이다 — wedding.ts는
+// private.ts를 import하지 않으므로 순환은 생기지 않는다.
+// Invitation.astro의 연락하기 목록도 같은 플래그로 행 자체를 뺀다. 한쪽만 고치면
+// 이름은 菊과 함께 혼주 줄에 나오는데 연락처 목록에는 전화 버튼이 남는 상태가 된다.
+const DECEASED_PHONE_KEYS: PhoneKey[] = [
+  ...(wedding.groom.father.deceased ? (['groomFather'] as const) : []),
+  ...(wedding.groom.mother.deceased ? (['groomMother'] as const) : []),
+  ...(wedding.bride.father.deceased ? (['brideFather'] as const) : []),
+  ...(wedding.bride.mother.deceased ? (['brideMother'] as const) : []),
+]
+
 export const privateData: PrivateData = parsePrivateData(
   import.meta.env.WEDDING_PRIVATE as string | undefined,
   import.meta.env.PROD,
+  PHONE_KEYS.filter((key) => !DECEASED_PHONE_KEYS.includes(key)),
 )

@@ -46,8 +46,13 @@ const parentLine = (side: typeof wedding.groom) =>
     <summary class="flex items-center justify-center text-sm cursor-pointer select-none py-3">
       연락하기
     </summary>
+    {/* 고인이 된 혼주는 목록에서 뺀다. 남겨두면 조문하려던 하객이 전화 버튼을 눌러
+        엉뚱한 사람에게 걸거나 없는 번호로 연결된다. 혼주 줄에는 菊과 함께 이름이
+        그대로 남으므로 예를 갖추는 자리는 잃지 않는다.
+        private.ts도 같은 플래그로 해당 전화번호 키를 필수에서 뺀다 — 유족이
+        없는 번호를 지어내지 않아도 빌드가 통과한다. */}
     <ul class="px-4 pb-3">
-      {people.map((person) => (
+      {people.filter((person) => !person.deceased).map((person) => (
         <li class="flex items-center justify-between gap-3 py-3 border-t"
             style="border-color: var(--line)">
           <span class="text-sm">{person.label}</span>
