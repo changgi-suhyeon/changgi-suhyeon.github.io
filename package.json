@@ -1,0 +1,31 @@
+{
+  "name": "marriage-invitation",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/react": "^6.0.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "astro": "^7.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.7"
+  }
+}
