@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "typecheck": "astro check"
   },
   "dependencies": {
