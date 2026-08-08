@@ -2560,7 +2560,10 @@ declare global {
   }
 }
 
-const KAKAO_KEY = import.meta.env.PUBLIC_KAKAO_JS_KEY as string
+// `.trim()`이 핵심이다. 카카오 콘솔에서 키를 복사해 CI 변수에 붙이면 개행이 딸려오기 쉬운데,
+// 그러면 값이 truthy라 버튼은 렌더되지만 `Kakao.init`이 실패해 영구히 비활성인 버튼이 남는다.
+// 키가 없을 때 버튼을 숨기기로 한 이유가 바로 그 "죽은 버튼"을 피하려는 것이었다.
+const KAKAO_KEY = (import.meta.env.PUBLIC_KAKAO_JS_KEY as string | undefined)?.trim() ?? ''
 
 interface Props {
   title: string
