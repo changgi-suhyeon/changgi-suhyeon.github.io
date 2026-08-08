@@ -4,6 +4,7 @@ import Hero from '../sections/Hero.astro'
 import Invitation from '../sections/Invitation.astro'
 import WeddingDay from '../sections/WeddingDay.astro'
 import Gallery from '../sections/Gallery.astro'
+import Location from '../sections/Location.astro'
 import { wedding } from '../data/wedding'
 ---
 <Base title={`${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`}>
@@ -12,5 +13,6 @@ import { wedding } from '../data/wedding'
     <Invitation />
     <WeddingDay />
     <Gallery />
+    <Location />
   </main>
 </Base>

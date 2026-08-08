@@ -22,10 +22,11 @@ export const wedding = {
     address: '서울 동대문구 왕산로 200 청량리역 롯데캐슬스카이-L65',
     tel: '', // 식장 대표번호 — 개인정보가 아니므로 여기 둔다
     map: {
-      kakao: '',
-      naver: '',
-      tmap: '',
-      staticImage: '/photos/map.webp',
+      // 좌표 없이도 되는 주소 검색 딥링크. 실제 식장 위치로 검색 결과가 뜬다.
+      kakao: 'https://map.kakao.com/link/search/' + encodeURIComponent('서울 동대문구 왕산로 200'),
+      naver: 'https://map.naver.com/p/search/' + encodeURIComponent('서울 동대문구 왕산로 200'),
+      tmap: '', // 티맵 딥링크는 좌표가 필요하다 — 좌표 확보 전까지 비워둔다
+      staticImage: '/photos/map.webp', // PLACEHOLDER — 실제 지도 스크린샷으로 교체 필요
     },
     transit: {
       subway: '',
