@@ -500,7 +500,9 @@ private 저장소는 해법이 아니다. GitHub Free는 private 저장소에서
 - [ ] **OG 캐시 초기화 후 실제 카톡으로 자신에게 전송해 썸네일 확인** — 캐시된 옛 이미지가 계속 나가는 사고가 흔하다
 - [ ] Turnstile 사이트 키·시크릿 설정 및 실제 제출 검증
 - [ ] `ADMIN_TOKEN` 설정, `/admin` 접근 및 CSV 다운로드 확인
-- [ ] RSVP 제출 → D1 저장 → 관리자 페이지 반영까지 실제 1회 관통
+- [x] RSVP 제출 → D1 저장 → 관리자 페이지 반영까지 실제 1회 관통 — **2026-08-08 완료.** 브라우저에서 실제 제출, D1에 행 저장 확인(한글 왕복 정상, `attending` 0/1 변환 정상, `ip_hash` 64자 salted hex), 관리자 API가 `ip_hash` 없이 집계와 함께 반환
+- [ ] **테스트 RSVP 행 삭제** — 위 관통 확인에 쓴 행이 남아 있다. Task 14의 관리자 페이지가 렌더할 데이터로 두었으므로, 실제 하객에게 링크를 돌리기 전에 지운다
+  - `npx wrangler d1 execute marriage-invitation --remote --command "DELETE FROM rsvp WHERE name = '테스트'"`
 - [ ] 카카오톡 인앱 브라우저에서 계좌 복사 동작 확인
 - [ ] **카카오톡 인앱 브라우저에서 RSVP 제출 관통 확인** — Turnstile managed 모드는 인앱 WebView에서 인터랙티브 챌린지를 띄울 수 있고, 그것이 렌더링되지 않으면 그 브라우저로 들어온 하객 전원이 제출 불가가 된다. 위젯 모드는 재배포 없이 바꿀 수 있으므로 실기기 확인만 하면 된다
 - [ ] Turnstile 장애 시 대비 — `TURNSTILE_REQUIRED` 킬 스위치가 `[vars]`에 있고 값 변경 + 재배포로 동작하는지 확인
