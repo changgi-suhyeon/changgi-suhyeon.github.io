@@ -2738,6 +2738,78 @@ git commit -m "feat: 공유 버튼·OG 메타·BGM 토글·푸터 추가"
 
 **페이지는 공개돼 있어도 된다. 보안은 페이지를 숨기는 게 아니라 토큰에서 온다.** 토큰은 저장소에 없고 Worker secret에만 있다.
 
+### Step 0 — 이웃 Worker 저장소를 먼저 고치고 배포한다
+
+**이 태스크는 계획에서 유일하게 두 저장소를 함께 고친다. 순서를 지켜야 한다.**
+
+사이트가 `createdMs`를 기대하는데 Worker가 아직 안 보내면 `new Date(undefined)` → `Invalid Date`가 되어, 지금의 9시간 밀림보다 나빠진다. **Worker를 먼저 배포한 뒤 사이트를 고친다.**
+
+작업 위치: `~/Desktop/Project/marriage-invitation-worker` (main 브랜치)
+
+**0-1. `src/contract.ts`** — 두 필드 추가
+
+```ts
+export interface RsvpRecord {
+  id: number
+  createdAt: string
+  /** epoch ms. `createdAt`은 SQLite `datetime('now')` 결과라 **타임존 표식이 없는 UTC 문자열**이고,
+   *  브라우저가 그것을 로컬 시각으로 파싱해 KST 환경에서 9시간 이르게 표시된다.
+   *  실제로 재현되었다: 서버가 '2026-08-08 12:12:50'을 주는데 제출은 21:12 KST였다.
+   *  화면 표시는 반드시 이 값으로 할 것. */
+  createdMs: number
+  side: Side
+  // ...나머지 그대로
+}
+
+export interface RsvpSummary {
+  // ...기존 6개
+  /** 동일 (측, 이름)으로 접혀 집계에서 빠진 건수.
+   *  0이 아니면 관리자가 목록을 눈으로 확인해야 한다 — 동측 동명이인이면 실제로 다른 사람이다. */
+  duplicateSubmissions: number
+}
+```
+
+**0-2. `src/rows.ts`** — `toRecord`에 `createdMs: row.created_ms` 추가. `RsvpRow`에는 이미 `created_ms`가 있다.
+
+**0-3. `src/summary.ts`** — 접힌 건수를 세운다
+
+```ts
+  const summary: RsvpSummary = {
+    total: 0, attending: 0, notAttending: 0,
+    groomGuests: 0, brideGuests: 0, totalMeals: 0,
+    duplicateSubmissions: 0,
+  }
+
+  for (const r of records) {
+    const key = `${r.side}|${r.name}`
+    if (seen.has(key)) {
+      // 접힌 건을 그냥 버리면 동측 동명이인의 인원이 조용히 사라진다.
+      // 세어서 노출하면 관리자가 목록을 확인할 수 있다.
+      summary.duplicateSubmissions += 1
+      continue
+    }
+    // ...나머지 그대로
+```
+
+**0-4. 테스트 갱신** — `test/rows.test.ts`의 기대 객체에 `createdMs` 추가, `test/summary.test.ts`의 빈 목록 기대값에 `duplicateSubmissions: 0` 추가. 그리고 **중복 케이스가 `duplicateSubmissions: 1`을 단언하도록** 보강한다.
+
+**0-5. 검증과 배포**
+
+```bash
+npm test && npm run typecheck
+npm run deploy
+```
+
+배포 후 실제 응답에 두 필드가 들어갔는지 확인한다:
+
+```bash
+curl -s -H "Authorization: Bearer <ADMIN_TOKEN>" <WORKER_URL>/rsvp
+```
+
+`records[0].createdMs`가 숫자이고, `summary.duplicateSubmissions`가 존재해야 한다. **이것을 확인하기 전에 사이트 쪽으로 넘어가지 말 것.**
+
+---
+
 - [ ] **Step 1: 실패하는 테스트 작성**
 
 `test/csv.test.ts`:
@@ -2938,6 +3010,8 @@ export default function AdminDashboard() {
             ['신랑측 인원', summary.groomGuests],
             ['신부측 인원', summary.brideGuests],
             ['식사 인원', summary.totalMeals],
+            // 0이 아니면 동측 동명이인이 접혔을 수 있다 — 실제로 다른 사람일 수 있으므로 목록을 봐야 한다.
+            ['중복 제출', summary.duplicateSubmissions],
           ] as [string, number][]).map(([label, value]) => (
             <div key={label} className="rounded border p-3 text-center"
                  style={{ borderColor: 'var(--line)' }}>
@@ -2971,8 +3045,12 @@ export default function AdminDashboard() {
                   const isDup = duplicates.has(`${r.side}|${r.name}`)
                   return (
                     <tr key={r.id} style={isDup ? { background: '#fdf6e3' } : undefined}>
+                      {/* createdAt이 아니라 createdMs를 쓴다. createdAt은 타임존 표식이 없는
+                          UTC 문자열이라 new Date()가 로컬로 파싱해 9시간 이르게 표시된다. */}
                       <td className="border-b py-2 pr-3 text-xs whitespace-nowrap"
-                          style={{ borderColor: 'var(--line)' }}>{r.createdAt}</td>
+                          style={{ borderColor: 'var(--line)' }}>
+                        {new Date(r.createdMs).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+                      </td>
                       <td className="border-b py-2 pr-3" style={{ borderColor: 'var(--line)' }}>
                         {r.side === 'groom' ? '신랑측' : '신부측'}</td>
                       <td className="border-b py-2 pr-3" style={{ borderColor: 'var(--line)' }}>
