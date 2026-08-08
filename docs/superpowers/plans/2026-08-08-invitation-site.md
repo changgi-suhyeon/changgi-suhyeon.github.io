@@ -327,8 +327,11 @@ ttf2woff2 < GowunBatang-Regular.ttf > GowunBatang-Regular.woff2
 
 - [ ] **Step 3: src/styles/global.css 생성**
 
+**Tailwind의 소스 범위를 명시적으로 좁힌다.** v4의 자동 콘텐츠 감지는 프로젝트 전체를 훑어서 `docs/`의 계획 문서 코드블록에 있는 클래스명까지 CSS로 생성한다(실측 확인됨 — `grid-cols-7`, `aspect-square`, `tabular-nums` 등이 배포된 CSS에 들어갔다). 문서가 늘수록 커지고, **빌드 산출물이 문서 내용에 의존하게 된다.**
+
 ```css
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+@source '../**/*.{astro,html,ts,tsx,js,jsx}';
 @import './tokens.css';
 
 @font-face {
@@ -385,13 +388,27 @@ a, button, summary {
   min-height: 44px;
 }
 
-/* 스크롤 진입 연출. 기본은 보이는 상태이므로 JS가 실패해도 콘텐츠가 사라지지 않는다. */
+/* 스크롤 진입 연출.
+ *
+ * 기본 상태는 '보임'이다. 숨김은 html.js-reveal 아래에서만 걸리고,
+ * 그 클래스는 스크립트가 IntersectionObserver를 성공적으로 세운 뒤에만 붙는다.
+ * 따라서 JS가 비활성화됐든, 차단됐든, 도중에 예외를 던졌든
+ * 콘텐츠는 항상 보인다 — 연출만 사라진다.
+ *
+ * 반대로 하면(기본 숨김 + JS가 보이게) 스크립트 하나가 죽는 순간
+ * 하객이 백지를 보게 된다. 그 방향으로 만들지 말 것. */
 .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+html.js-reveal .reveal {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 700ms ease-out, transform 700ms ease-out;
 }
-.reveal.is-visible {
+
+html.js-reveal .reveal.is-visible {
   opacity: 1;
   transform: none;
 }
@@ -402,7 +419,7 @@ a, button, summary {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .reveal { opacity: 1; transform: none; }
+  html.js-reveal .reveal { opacity: 1; transform: none; }
 }
 ```
 
@@ -414,25 +431,29 @@ CSS scroll-driven animation은 구형 기기 지원이 고르지 않아 쓰지 �
 
 ```astro
 <script is:inline>
-  // reduce 설정이면 아무것도 하지 않는다. CSS가 이미 보이는 상태로 두었다.
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  // 숨김은 html.js-reveal 이 붙은 뒤에만 걸린다. 이 스크립트가 한 줄도 못 돌거나
+  // 도중에 던지면 클래스가 안 붙고, 콘텐츠는 CSS 기본값대로 보인 채 남는다.
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) throw 0
+    if (!('IntersectionObserver' in window)) throw 0
+
     const targets = document.querySelectorAll('.reveal')
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue
-            entry.target.classList.add('is-visible')
-            observer.unobserve(entry.target) // 한 번만
-          }
-        },
-        { rootMargin: '0px 0px -10% 0px' },
-      )
-      targets.forEach((el) => observer.observe(el))
-    } else {
-      // 미지원 브라우저에서는 그냥 보여준다.
-      targets.forEach((el) => el.classList.add('is-visible'))
-    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          entry.target.classList.add('is-visible')
+          observer.unobserve(entry.target) // 한 번만
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px' },
+    )
+
+    // 관찰 준비가 끝난 뒤에야 숨김을 켠다 — 순서를 바꾸지 말 것.
+    document.documentElement.classList.add('js-reveal')
+    targets.forEach((el) => observer.observe(el))
+  } catch {
+    // 아무것도 하지 않는다. 연출만 없고 콘텐츠는 그대로 보인다.
   }
 </script>
 ```
