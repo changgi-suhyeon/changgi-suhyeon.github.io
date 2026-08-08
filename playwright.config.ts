@@ -24,7 +24,6 @@ export default defineConfig({
       command:
         'npx astro preview stop && ' +
         'PUBLIC_RSVP_ENDPOINT=' + WORKER +
-        ' PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA' +
         ' npm run build && ASTRO_PREVIEW_BACKGROUND=1 npm run preview -- --port 4321',
       url: SITE,
       // 재사용하면 위 command 전체가 통째로 스킵된다 — npm run build 포함. 그러면

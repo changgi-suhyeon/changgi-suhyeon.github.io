@@ -34,13 +34,10 @@ test.describe('RSVP 제출', () => {
     await page.getByLabel('본인 포함 총 참석 인원').fill('2')
     await page.getByLabel('식사하실 인원').fill('2')
 
-    // Turnstile 테스트 키(1x00000000000000000000AA)는 headless Chromium에서
-    // 위젯 iframe을 그리지 않고 곧바로 히든 인풋(cf-turnstile-response)에 더미 토큰을
-    // 채운다 — 실측 확인됨. iframe을 기다리면 영영 나타나지 않아 테스트가 타임아웃된다.
-    // 토큰 발급에 잠깐 걸리므로 히든 인풋 값이 채워질 때까지 기다린다.
-    await expect(page.locator('input[name="cf-turnstile-response"]')).not.toHaveValue('', {
-      timeout: 10_000,
-    })
+    // 서버는 폼이 뜬 뒤 3초가 지나야 사람으로 본다(허니팟과 함께 Turnstile을 대신하는
+    // 봇 방어). 이 대기가 없으면 자동화가 사람보다 빨라 400을 받고, 그것이 계약 불일치로
+    // 오인된다 — 이 스펙이 잡으려는 것과 전혀 다른 이유의 빨간불이다.
+    await page.waitForTimeout(3200)
 
     await page.getByRole('button', { name: '전달하기' }).click()
 

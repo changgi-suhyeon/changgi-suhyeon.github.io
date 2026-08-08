@@ -14,7 +14,14 @@ export interface RsvpSubmission {
   mealCount: number
   phone?: string
   message?: string
-  turnstileToken: string
+  /** 허니팟. 화면 밖에 숨긴 입력칸이라 사람은 채울 수 없다 — 값이 있으면 봇이다.
+   *  폼 HTML을 긁어 보이는 필드를 전부 채우는 흔한 스팸 봇을 잡는다.
+   *  사람에게 아무 마찰도 주지 않는다는 것이 이 방식의 요점이다. */
+  honeypot?: string
+  /** 폼이 화면에 뜬 뒤 제출까지 걸린 시간(ms). 사람은 이름을 치는 데만도 몇 초가 걸린다.
+   *  클라이언트가 보내는 값이라 위조할 수 있다 — 요청을 직접 조립하는 상대는 못 막고,
+   *  폼을 긁어 즉시 되쏘는 봇만 막는다. 한계를 알고 쓰는 보조 수단이다. */
+  elapsedMs?: number
 }
 
 /** 관리자 조회 시 돌려주는 형태 */

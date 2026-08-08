@@ -8,7 +8,7 @@
 
 ## 스택
 
-Astro · React 아일랜드 · shadcn/ui (Base UI) · Cloudflare Workers + D1 + Turnstile
+Astro · React 아일랜드 · shadcn/ui (Base UI) · Cloudflare Workers + D1
 
 기본 JS 0으로 렌더하고, 상태나 브라우저 API가 필요한 것만 아일랜드로 하이드레이션한다.
 경계는 설계 문서 §3.3 참조.
@@ -64,6 +64,16 @@ Astro · React 아일랜드 · shadcn/ui (Base UI) · Cloudflare Workers + D1 + 
 **주의:** `wedding.ts`의 이름·인사말·교통정보 등이 비어 있는 채로 빌드하면, 그 글자들은
 서브셋에 없다. 값을 채운 뒤 다시 빌드(재배포)하면 `npm run build`가 서브셋도 함께
 다시 만들기 때문에 자동으로 반영된다 — 값을 채운 뒤에는 반드시 재배포가 필요하다.
+
+## RSVP 봇 방어
+
+Turnstile은 제거했다 — 어르신 하객이 폼에 뜬 보안 위젯 자체에 거부감을 느낀다는
+피드백 때문이다. 대신 하객에게 마찰이 0인 수단만 쓴다: 허니팟 필드, 제출 소요시간
+3초 하한, Origin 게이트, 레이트리밋 두 창(10분/20건 · 1분/5건). 자세한 것은
+`marriage-invitation-worker`의 README 참고.
+
+허니팟 입력칸의 `name`은 **표준 autofill 토큰이면 안 된다.** `company`나 `nickname`을
+쓰면 브라우저 자동완성이 값을 채워 진짜 하객이 봇으로 몰린다. 지금은 `rsvp-extra`다.
 
 ## E2E
 

@@ -8,27 +8,10 @@ import {
   type Side,
   type ValidationError,
 } from '../lib/rsvp-contract'
-import { RSVP_ENDPOINT, TURNSTILE_SITE_KEY } from '../lib/public-env'
-
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        el: HTMLElement,
-        opts: {
-          sitekey: string
-          callback: (t: string) => void
-          'error-callback'?: () => void
-        },
-      ) => string
-      reset: (id?: string) => void
-    }
-  }
-}
+import { RSVP_ENDPOINT } from '../lib/public-env'
 
 // 값이 비면 프로덕션 빌드를 중단시킨다. 이유는 public-env.ts 주석 참고.
 const ENDPOINT = RSVP_ENDPOINT
-const SITE_KEY = TURNSTILE_SITE_KEY
 const STORAGE_KEY = 'rsvp-submitted'
 
 type Status = 'idle' | 'sending' | 'done' | 'error'
@@ -55,9 +38,14 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
   const [failCount, setFailCount] = useState(0)
   const [alreadySent, setAlreadySent] = useState(false)
 
-  const tokenRef = useRef('')
-  const widgetRef = useRef<HTMLDivElement>(null)
-  const widgetIdRef = useRef<string | undefined>(undefined)
+  // 허니팟. 사람은 볼 수 없는 칸이라 항상 ''이어야 한다 — 값이 차 있으면 서버가 봇으로 본다.
+  const [honeypot, setHoneypot] = useState('')
+
+  // 폼이 뜬 시각. 제출까지 3초도 안 걸렸으면 서버가 봇으로 본다.
+  // useState 초기화자가 아니라 useEffect에서 채우는 이유: 이 아일랜드는 SSR도 되므로
+  // 초기화자에 Date.now()를 넣으면 빌드 시각이 렌더 결과에 섞여 들어갈 수 있다.
+  // Countdown이 정확히 그 이유로 하이드레이션이 깨졌었다.
+  const mountedAtRef = useRef(0)
 
   // localStorage는 쿠키·사이트 데이터를 막은 브라우저와 일부 인앱 웹뷰에서 SecurityError를 던진다.
   // 여기서 던지면 에러 바운더리가 없어 아일랜드 전체가 언마운트되고 — 즉 RSVP 폼이 통째로 사라진다.
@@ -78,41 +66,15 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
     setMealCount((current) => Math.min(current, partySize))
   }, [partySize])
 
-  // Turnstile 스크립트 로드와 위젯 렌더
+  // 마운트 시각을 한 번만 기록한다. "수정" 경로로 돌아와도 아일랜드는 언마운트되지
+  // 않으므로 값이 유지되고, 그때 elapsed는 더 커진다 — 오래 머문 하객을 막지 않는다.
   useEffect(() => {
-    if (closed) return
-    const src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-    const existing = document.querySelector(`script[src="${src}"]`)
-
-    const render = () => {
-      if (!widgetRef.current || !window.turnstile || widgetIdRef.current) return
-      widgetIdRef.current = window.turnstile.render(widgetRef.current, {
-        sitekey: SITE_KEY,
-        callback: (token) => {
-          tokenRef.current = token
-        },
-        'error-callback': () => {
-          tokenRef.current = ''
-        },
-      })
-    }
-
-    if (existing) {
-      render()
-      return
-    }
-    const script = document.createElement('script')
-    script.src = src
-    script.async = true
-    script.onload = render
-    document.head.appendChild(script)
-    // `status`가 deps에 있어야 done → idle 복귀 시 이펙트가 다시 돌아 위젯을 렌더한다.
-    // `[closed]`만 두면 폼으로 돌아와도 컨테이너가 빈 채 남는다.
-  }, [closed, status])
+    mountedAtRef.current = Date.now()
+  }, [])
 
   const errorFor = (field: string) => fieldErrors.find((e) => e.field === field)?.message
 
-  // 화면에 렌더 슬롯이 있는 필드 목록. 여기 없는 필드 에러(turnstileToken, `_` 등)는
+  // 화면에 렌더 슬롯이 있는 필드 목록. 여기 없는 필드 에러(`_` 등)는
   // 어느 칸에도 표시되지 않아 하객이 "입력값을 확인해 주세요"만 보고 갈 곳을 잃는다.
   // 그래서 남는 것들은 아래 에러 박스에 함께 출력한다.
   const RENDERED_FIELDS = ['side', 'name', 'attending', 'partySize', 'mealCount', 'phone', 'message']
@@ -120,6 +82,12 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    // setStatus보다 먼저 읽는다. await 뒤로 밀면 그 사이 재렌더가 끼어들 수 있다.
+    // 마운트 이펙트가 아직 안 돌았으면(0) 값을 보내지 않는다 — 서버는 없는 값을
+    // 통과시키므로, 측정 못 한 것을 이유로 하객을 막지 않는다.
+    const elapsedMs = mountedAtRef.current > 0 ? Date.now() - mountedAtRef.current : undefined
+
     setStatus('sending')
     setFieldErrors([])
     setErrorText('')
@@ -136,7 +104,8 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
           mealCount: attending ? mealCount : 0,
           phone: phone || undefined,
           message: message || undefined,
-          turnstileToken: tokenRef.current,
+          honeypot,
+          elapsedMs,
         }),
       })
 
@@ -151,8 +120,6 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         setErrorText(data.error ?? '전달에 실패했어요. 잠시 후 다시 시도해 주세요.')
         setFailCount((n) => n + 1)
         setStatus('error')
-        window.turnstile?.reset(widgetIdRef.current)
-        tokenRef.current = ''
         return
       }
 
@@ -161,8 +128,6 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         setErrorText('전달 결과를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.')
         setFailCount((n) => n + 1)
         setStatus('error')
-        window.turnstile?.reset(widgetIdRef.current)
-        tokenRef.current = ''
         return
       }
 
@@ -175,29 +140,10 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
       } catch {
         // 플래그를 못 남겨도 제출 자체는 성공했다. 조용히 넘어간다.
       }
-
-      // Turnstile 토큰은 일회용이다. 성공 후에도 비우지 않으면
-      // "수정" 경로에서 소비된 토큰이 재전송돼 서버가 403을 준다.
-      //
-      // reset()은 서드파티(Cloudflare) 코드다. 여기서 던지면 바깥 catch가 받아
-      // setStatus('error')를 부르고, 같은 React 배치 안이라 위의 setStatus('done')을
-      // 덮어쓴다 — D1에 이미 들어간 제출을 두고 하객은 "전달에 실패했어요"를 본다.
-      // 하객은 다시 제출하고(alreadySent는 마운트 때 한 번만 읽으므로 안내도 못 뜬다),
-      // 그때 인원을 "고쳐" 넣으면 최신 행이 이기면서 원래 맞던 인원이 사라진다.
-      // 바로 위 setItem과 같은 이유로 감싼다: 성공 처리를 뒤집지 않는다.
-      try {
-        window.turnstile?.reset(widgetIdRef.current)
-      } catch {
-        // 토큰 초기화 실패는 "수정" 경로에서만 드러나고, 그때 서버가 403을 주면
-        // 하객은 다시 제출할 수 있다. 이미 성공한 제출을 실패로 만드는 것보다 낫다.
-      }
-      tokenRef.current = ''
     } catch {
       setErrorText('전달에 실패했어요. 통신 상태를 확인하고 다시 시도해 주세요.')
       setFailCount((n) => n + 1)
       setStatus('error')
-      window.turnstile?.reset(widgetIdRef.current)
-      tokenRef.current = ''
     }
   }
 
@@ -217,13 +163,7 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         <p style={{ color: 'var(--ink)' }}>참석 여부를 전달했습니다. 감사합니다.</p>
         <button
           type="button"
-          onClick={() => {
-            // done 화면이 뜨는 동안 폼 서브트리가 언마운트돼 Turnstile 위젯 컨테이너도 사라진다.
-            // widgetIdRef를 비우지 않으면 렌더 이펙트의 가드가 막아 위젯이 영영 안 뜬다.
-            widgetIdRef.current = undefined
-            tokenRef.current = ''
-            setStatus('idle')
-          }}
+          onClick={() => setStatus('idle')}
           className="mt-4 underline"
           style={{ color: 'var(--muted)' }}
         >
@@ -358,7 +298,22 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         )}
       </div>
 
-      <div ref={widgetRef} className="flex justify-center" />
+      {/* 허니팟 — 사람에게는 보이지 않고 봇에게만 보이는 칸.
+          - display:none 대신 화면 밖으로 밀어낸다. 숨긴 필드를 건너뛰는 봇이 있다.
+          - autoComplete는 반드시 'off'이고 name도 표준 autofill 토큰이 아니어야 한다.
+            'company'나 'nickname'처럼 브라우저가 아는 이름을 쓰면 자동완성이 값을 채워
+            **진짜 하객이 봇으로 몰려 차단된다.** 이 칸의 유일한 실패 방식이 그것이다.
+          - tabIndex=-1과 aria-hidden으로 키보드·스크린리더 흐름에서도 뺀다. */}
+      <input
+        type="text"
+        name="rsvp-extra"
+        value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+      />
 
       {status === 'error' && (
         // role="alert"이 없으면 스크린리더 사용자는 제출이 실패한 사실을 통보받지
@@ -367,8 +322,8 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
              className="rounded border px-3 py-2 text-xs leading-relaxed"
              style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
           <p>{errorText}</p>
-          {/* 렌더 슬롯이 없는 필드 에러를 여기서 건진다. 보안 확인 실패가 대표적인데,
-              이걸 빠뜨리면 하객은 어느 칸도 빨갛지 않은 채 "입력값을 확인하라"는 말만 본다. */}
+          {/* 렌더 슬롯이 없는 필드 에러('_')를 여기서 건진다. 이걸 빠뜨리면 하객은
+              어느 칸도 빨갛지 않은 채 "입력값을 확인하라"는 말만 보고 갈 곳을 잃는다. */}
           {unrenderedErrors.map((e) => (
             <p key={e.field} className="mt-1">{e.message}</p>
           ))}
