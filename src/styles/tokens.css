@@ -1,0 +1,15 @@
+:root {
+  color-scheme: light;
+
+  --bg: #f4f3f0;
+  --line: #d5d2ca;
+  --muted: #9b978d;
+  --ink: #35342f;
+  --body: #6c6a64;
+
+  --font-serif-kr: 'Gowun Batang', 'AppleMyungjo', serif;
+  --font-sans-kr: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+  /* 폼·관리자 전용. 서브셋 폰트를 쓰지 않아 임의 글자가 깨지지 않는다. */
+  --font-system: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    'Segoe UI', Roboto, sans-serif;
+}

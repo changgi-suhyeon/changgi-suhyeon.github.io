@@ -1,1 +1,76 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import './tokens.css';
+
+@font-face {
+  font-family: 'Gowun Batang';
+  src: url('/fonts/GowunBatang-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gowun Batang';
+  src: url('/fonts/GowunBatang-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/Pretendard-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/Pretendard-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans-kr);
+  font-size: 16px; /* 어른 하객 기준 하한 */
+  line-height: 1.75;
+  color: var(--body);
+  -webkit-text-size-adjust: 100%;
+}
+
+.font-serif-kr { font-family: var(--font-serif-kr); }
+.font-sans-kr  { font-family: var(--font-sans-kr); }
+.font-system   { font-family: var(--font-system); }
+
+/* 청첩장 본문 폭. 모바일 우선이므로 데스크톱에서도 좁게 유지한다. */
+.shell {
+  max-width: 480px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* 터치 타겟 하한 */
+a, button, summary {
+  min-height: 44px;
+}
+
+/* 스크롤 진입 연출. 기본은 보이는 상태이므로 JS가 실패해도 콘텐츠가 사라지지 않는다. */
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 700ms ease-out, transform 700ms ease-out;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
