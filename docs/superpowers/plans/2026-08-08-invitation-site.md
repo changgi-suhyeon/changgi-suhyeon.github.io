@@ -3157,7 +3157,22 @@ test('참석 인원을 줄이면 식사 인원이 따라 줄어든다', async ({
   await page.getByLabel('식사하실 인원').fill('5')
   await page.getByLabel('본인 포함 총 참석 인원').fill('2')
 
+  // 이 정방향 단언이 없으면 클램프를 통째로 지워도 테스트가 통과한다.
   await expect(page.getByLabel('식사하실 인원')).toHaveValue('2')
+})
+
+test('인원 칸을 지웠다 다시 채워도 식사 인원이 0으로 굳지 않는다', async ({ page }) => {
+  // Number('')는 0이다. 가드가 없으면 백스페이스로 칸이 비는 찰나에
+  // 클램프가 식사 인원을 0으로 확정하고, 다시 3을 입력해도 되돌아오지 않는다.
+  // 서버는 0 <= 0 <= 3이라 정상 수락하므로 `참석 3명 · 식사 0명`이 조용히 저장된다.
+  await page.getByRole('button', { name: '참석', exact: true }).click()
+  await page.getByLabel('본인 포함 총 참석 인원').fill('3')
+  await page.getByLabel('식사하실 인원').fill('3')
+
+  await page.getByLabel('본인 포함 총 참석 인원').fill('')
+  await page.getByLabel('본인 포함 총 참석 인원').fill('3')
+
+  await expect(page.getByLabel('식사하실 인원')).toHaveValue('3')
 })
 
 test('성함 없이 제출하면 서버 검증 오류가 인라인으로 뜬다', async ({ page }) => {
