@@ -8,6 +8,7 @@ import Location from '../sections/Location.astro'
 import Information from '../sections/Information.astro'
 import Shuttle from '../sections/Shuttle.astro'
 import Rsvp from '../sections/Rsvp.astro'
+import Accounts from '../sections/Accounts.astro'
 import { wedding } from '../data/wedding'
 ---
 <Base title={`${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`}>
@@ -20,5 +21,6 @@ import { wedding } from '../data/wedding'
     <Information />
     <Shuttle />
     <Rsvp />
+    <Accounts />
   </main>
 </Base>

@@ -1,0 +1,42 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import CopyButton from '../components/CopyButton'
+import { privateData } from '../data/private'
+
+// 계좌는 본인·아버지·어머니 등 여러 개가 들어올 수 있어 배열이다.
+// 한쪽 배열이 비면(정상 데이터에서는 일어나지 않지만, 방어적으로) 그쪽
+// <details>를 렌더하지 않는다 — 내용 없는 빈 아코디언을 보여주지 않는다.
+const groups = [
+  { title: '신랑측 계좌번호', accounts: privateData.accounts.groom },
+  { title: '신부측 계좌번호', accounts: privateData.accounts.bride },
+].filter((group) => group.accounts.length > 0)
+---
+<section class="shell py-14 reveal">
+  <SectionLabel en="ACCOUNT" ko="마음 전하는 곳" />
+
+  <div class="space-y-2">
+    {groups.map((group) => (
+      <details class="border rounded-lg" style="border-color: var(--line)">
+        <summary class="flex items-center px-4 text-sm cursor-pointer select-none">
+          {group.title}
+        </summary>
+        <ul class="px-4 pb-3">
+          {group.accounts.map((account) => (
+            <li class="flex items-start justify-between gap-3 py-3 border-t"
+                style="border-color: var(--line)">
+              <span class="text-sm">
+                <span style="color: var(--ink)">{account.bank} {account.number}</span><br />
+                <span class="text-xs" style="color: var(--muted)">예금주 {account.holder}</span>
+                {account.kakaopay && (
+                  <><br /><a href={account.kakaopay} target="_blank" rel="noopener noreferrer"
+                     class="text-xs underline" style="color: var(--muted)">카카오페이로 송금</a></>
+                )}
+              </span>
+              <CopyButton value={account.number} label={account.holder} client:visible />
+            </li>
+          ))}
+        </ul>
+      </details>
+    ))}
+  </div>
+</section>
