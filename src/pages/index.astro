@@ -2,11 +2,13 @@
 import Base from '../layouts/Base.astro'
 import Hero from '../sections/Hero.astro'
 import Invitation from '../sections/Invitation.astro'
+import WeddingDay from '../sections/WeddingDay.astro'
 import { wedding } from '../data/wedding'
 ---
 <Base title={`${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`}>
   <main>
     <Hero />
     <Invitation />
+    <WeddingDay />
   </main>
 </Base>

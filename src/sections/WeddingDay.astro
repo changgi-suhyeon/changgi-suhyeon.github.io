@@ -1,0 +1,38 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import Countdown from '../components/Countdown'
+import { wedding } from '../data/wedding'
+
+const kst = new Date(Date.parse(wedding.date) + 9 * 3600 * 1000)
+const year = kst.getUTCFullYear()
+const month = kst.getUTCMonth() // 0-based
+const targetDay = kst.getUTCDate()
+
+const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay()
+const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+
+const cells: (number | null)[] = [
+  ...Array.from({ length: firstWeekday }, () => null),
+  ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+]
+const weekdayNames = ['일', '월', '화', '수', '목', '금', '토']
+---
+<section class="shell py-14 reveal">
+  <SectionLabel en="WEDDING DAY" ko={`${year}년 ${month + 1}월`} />
+
+  <div class="grid grid-cols-7 gap-1 text-center">
+    {weekdayNames.map((name) => (
+      <span class="text-[13px] py-1" style="color: var(--muted)">{name}</span>
+    ))}
+    {cells.map((day) => (
+      <span
+        class:list={['text-sm py-2 rounded-full', day === targetDay && 'font-semibold']}
+        style={day === targetDay
+          ? 'background: var(--ink); color: var(--bg)'
+          : 'color: var(--body)'}
+      >{day ?? ''}</span>
+    ))}
+  </div>
+
+  <Countdown weddingIso={wedding.date} client:visible />
+</section>
