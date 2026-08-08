@@ -3,7 +3,13 @@ import SectionLabel from '../components/SectionLabel.astro'
 import Lightbox from '../components/Lightbox'
 import { wedding } from '../data/wedding'
 ---
-<section class="shell py-14 reveal">
-  <SectionLabel en="GALLERY" ko="사진첩" />
-  <Lightbox photos={wedding.gallery} client:visible />
-</section>
+{/* 사진이 없으면 섹션 자체를 렌더하지 않는다 — "GALLERY / 사진첩" 제목만 덩그러니
+    남는 빈 껍데기를 보여주지 않는다. Information·Shuttle과 같은 방식이다.
+    npm run photos를 히어로만 든 디렉터리에 돌리면 gallery.json이 []가 되는데,
+    그 일은 실제 스튜디오 사진을 넣는 날 — 다들 바쁜 그날 — 일어난다. */}
+{wedding.gallery.length > 0 && (
+  <section class="shell py-14 reveal">
+    <SectionLabel en="GALLERY" ko="사진첩" />
+    <Lightbox photos={wedding.gallery} client:visible />
+  </section>
+)}
