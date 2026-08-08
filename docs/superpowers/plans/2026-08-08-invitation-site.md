@@ -766,10 +766,22 @@ npm run build
 
 Expected: 성공
 
-- [ ] **Step 8: 커밋**
+- [ ] **Step 8: `--passWithNoTests`를 제거한다**
+
+Task 1은 테스트가 0개인 상태에서 CI를 통과시키려고 `package.json`의 test 스크립트를 `vitest run --passWithNoTests`로 두었다. **이 태스크가 첫 실제 테스트를 추가하므로 이제 그 플래그를 뺀다.**
+
+```json
+"test": "vitest run",
+```
+
+그대로 두면 이후 글롭 오타·파일명 실수·`test/` 디렉터리 유실로 **0개가 수집돼도 CI가 조용히 초록으로 통과한다.** 테스트가 있는데 안 돌아가는 상태가 테스트가 없는 상태보다 위험하다.
+
+제거 후 `npm test`가 실제로 11개를 수집해 통과하는지 확인한다.
+
+- [ ] **Step 9: 커밋**
 
 ```bash
-git add src/data test/private.test.ts .env.example
+git add src/data test/private.test.ts .env.example package.json
 git commit -m "feat: 콘텐츠 데이터 모델과 민감정보 빌드 타임 주입 가드 추가"
 ```
 
