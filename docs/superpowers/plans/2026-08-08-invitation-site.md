@@ -2967,8 +2967,16 @@ export default function AdminDashboard() {
     const link = document.createElement('a')
     link.href = url
     link.download = 'rsvp.csv'
+
+    // anchor를 DOM에 넣었다 빼고, 해제를 다음 틱으로 미룬다.
+    // 크롬은 둘 다 없어도 동작하지만 파이어폭스는 DOM에 없는 anchor의 programmatic click을
+    // 무시하고, 사파리는 다운로드가 시작되기 전에 blob URL이 해제되면 취소한다.
+    // 둘 다 조용히 실패한다 — 에러도 콘솔 메시지도 없이 그냥 아무 일도 안 일어난다.
+    // 이 버튼이 식장에 넘길 파일을 뽑는 유일한 경로라 그 실패가 눈에 띄지 않는 게 문제다.
+    document.body.appendChild(link)
     link.click()
-    URL.revokeObjectURL(url)
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
   // 같은 (측, 이름)이 여러 번 나오면 표시해준다. 최신 건이 위에 온다.
