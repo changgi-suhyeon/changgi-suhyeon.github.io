@@ -2,6 +2,15 @@
 @source '../**/*.{astro,html,ts,tsx,js,jsx}';
 @import './tokens.css';
 
+/* 어른 하객 기준: 본문 최소 16px, 보조 라벨(버튼 등) 최소 14px.
+ * 기본 Tailwind 스케일(text-sm=14px, text-xs=12px)은 이 하한을 어긴다.
+ * 섹션마다 임의값으로 고치는 대신 스케일 자체를 올려서, 앞으로 만들어질
+ * 섹션들도 text-sm/text-xs를 쓰기만 하면 자동으로 하한을 지키게 한다. */
+@theme {
+  --text-xs: 0.875rem; /* 14px — 버튼·보조 라벨의 하한 */
+  --text-sm: 1rem;     /* 16px — 본문 */
+}
+
 @font-face {
   font-family: 'Gowun Batang';
   src: url('/fonts/GowunBatang-Regular.woff2') format('woff2');
