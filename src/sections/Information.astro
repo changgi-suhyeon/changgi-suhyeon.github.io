@@ -1,0 +1,27 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import { wedding } from '../data/wedding'
+const { meal } = wedding
+
+// type·hours·reception이 전부 비면 내용 없는 섹션(라벨만 있는 빈 껍데기)이 보인다.
+// 셋 다 비었을 때는 섹션 자체를 렌더하지 않는다. 값이 채워지면 자동으로 나타난다.
+// trim()은 공백만 든 값(예: ' ')이 나중에 실수로 들어와도 truthy로 통과하는 것을 막는다.
+const hasContent = meal.type.trim() || meal.hours.trim() || meal.reception !== null
+---
+{hasContent && (
+  <section class="shell py-14 reveal">
+    <SectionLabel en="INFORMATION" ko="식사 안내" />
+    <p class="text-center text-sm leading-loose whitespace-pre-line">
+      {meal.type}{meal.hours && `\n${meal.hours}`}
+    </p>
+
+    {meal.reception && (
+      <div class="mt-8 pt-8 border-t text-center" style="border-color: var(--line)">
+        <h3 class="font-serif-kr text-base" style="color: var(--ink)">피로연</h3>
+        <p class="mt-3 text-sm leading-loose">
+          {meal.reception.at}<br />{meal.reception.place}
+        </p>
+      </div>
+    )}
+  </section>
+)}

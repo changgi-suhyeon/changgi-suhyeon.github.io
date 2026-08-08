@@ -1,0 +1,25 @@
+---
+import SectionLabel from '../components/SectionLabel.astro'
+import { wedding } from '../data/wedding'
+import { privateData } from '../data/private'
+const { shuttle } = wedding
+
+// 전세버스는 지방 단체 하객에게만 필요한 정보다. departAt·boardingPoint가 둘 다
+// 비면 섹션 자체를 렌더하지 않는다 — 값이 채워지면 자동으로 나타난다.
+// 전화 버튼은 섹션이 안 보이면 함께 사라지므로 따로 가드하지 않는다.
+// trim()은 공백만 든 값이 나중에 실수로 들어와도 truthy로 통과하는 것을 막는다.
+const hasContent = shuttle.departAt.trim() || shuttle.boardingPoint.trim()
+---
+{hasContent && (
+  <section class="shell py-14 reveal">
+    <SectionLabel en="SHUTTLE BUS" ko="전세버스 안내" />
+    <p class="text-center text-sm leading-loose">
+      {shuttle.departAt}<br />{shuttle.boardingPoint}
+    </p>
+    <a href={`tel:${privateData.phones.shuttle}`}
+       class="mt-6 flex items-center justify-center rounded border text-sm"
+       style="border-color: var(--line); color: var(--ink)">
+      인솔 담당자에게 전화하기
+    </a>
+  </section>
+)}
