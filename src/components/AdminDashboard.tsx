@@ -174,7 +174,13 @@ export default function AdminDashboard() {
                 {records.map((r) => {
                   const isDup = duplicates.has(`${r.side}|${r.name}`)
                   return (
-                    <tr key={r.id} style={isDup ? { background: 'var(--surface)' } : undefined}>
+                    // 배경 채우기(--surface)는 페이지 배경(--bg)과 대비 1.055:1이라
+                    // 사실상 보이지 않았다. 왼쪽 테두리로 바꾼다 — 같은 토큰 체계를
+                    // 쓰면서 한눈에 읽힌다.
+                    <tr
+                      key={r.id}
+                      style={isDup ? { boxShadow: 'inset 3px 0 0 var(--danger)' } : undefined}
+                    >
                       {/* createdAt이 아니라 createdMs를 쓴다. createdAt은 타임존 표식이 없는
                           UTC 문자열이라 new Date()가 로컬로 파싱해 9시간 이르게 표시된다. */}
                       <td
