@@ -484,6 +484,8 @@ private 저장소는 해법이 아니다. GitHub Free는 private 저장소에서
 - [ ] `wedding.ts` 전 항목 실제 값으로 교체 (플레이스홀더 잔존 여부 확인)
 - [ ] GitHub Secrets에 `WEDDING_PRIVATE` 등록
 - [ ] **`WEDDING_PRIVATE` 없이 프로덕션 빌드 시 실제로 실패하는지 확인** — 가드가 동작하지 않으면 §7.2의 보호가 통째로 무의미하다
+  - `env -u WEDDING_PRIVATE npm run build`로는 검증되지 않는다. Vite의 dotenv가 셸 환경과 무관하게 `.env` 파일을 읽어 `env -u`를 무력화하므로, 그 명령은 항상 성공하고 확인했다는 착각만 남긴다
+  - 올바른 확인: `mv .env .env.bak && npm run build; mv .env.bak .env` — 되돌리는 부분을 빠뜨리지 말 것
 - [ ] 배포된 사이트에서 계좌번호·전화번호가 더미가 아닌 실제 값으로 렌더되는지 확인
 - [ ] 예식 시각이 히어로·캘린더·D-day·OG에서 모두 일치
 - [ ] 카카오 개발자 콘솔에 `https://changgi-suhyeon.github.io` 도메인 등록

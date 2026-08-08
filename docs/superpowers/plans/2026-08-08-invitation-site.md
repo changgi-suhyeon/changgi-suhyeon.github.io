@@ -772,11 +772,17 @@ PUBLIC_KAKAO_JS_KEY=
 
 이 확인을 건너뛰면 가드 전체가 무의미해진다.
 
+**⚠️ `env -u WEDDING_PRIVATE npm run build`로는 검증되지 않는다.** Vite의 dotenv는 셸 환경과 무관하게 `.env` 파일을 읽으므로 `env -u`가 무력화된다. 그 명령은 항상 성공하고, 검증했다고 착각하게 만든다.
+
+로컬에서 가드를 확인하려면 **`.env`를 실제로 치워야 한다:**
+
 ```bash
-env -u WEDDING_PRIVATE npm run build
+mv .env .env.bak && npm run build; status=$?; mv .env.bak .env; echo "exit=$status"
 ```
 
-**⚠️ 이 태스크 시점에는 위 명령이 성공한다. 그것이 정상이다.**
+`mv`를 되돌리는 부분을 빠뜨리지 말 것. CI에는 `.env` 파일 자체가 없으므로 GitHub Secret만 지우면 재현된다.
+
+**⚠️ 이 태스크 시점에는 위 명령도 성공한다. 그것이 정상이다.**
 
 `private.ts`를 **아무도 import하지 않으면** Vite가 그 모듈을 빌드 그래프에 포함하지 않고, `parsePrivateData()`가 실행조차 되지 않는다. 가드 코드는 존재하지만 죽어 있는 상태다. 이 태스크는 데이터 모델만 만들고 소비자는 만들지 않으므로 여기에 해당한다.
 
@@ -3248,7 +3254,7 @@ git push origin main
 - [ ] `npm test` 전체 통과 (private 가드 · D-day · copy · csv)
 - [ ] `npm run e2e` 5개 통과 — 두 저장소의 RSVP 계약이 일치한다는 증거
 - [ ] `npm run typecheck` 오류 없음
-- [ ] `env -u WEDDING_PRIVATE npm run build` 가 **실패**한다
+- [ ] `mv .env .env.bak && npm run build; mv .env.bak .env` 가 **실패**한다 (`env -u`로는 검증 불가 — Vite dotenv가 파일을 읽음)
 - [ ] `https://changgi-suhyeon.github.io/` 에서 11개 섹션이 모두 렌더된다
 - [ ] 카카오톡 인앱 브라우저 확인 6항목 전부 통과
 - [ ] Lighthouse Performance 95+, Accessibility 95+
