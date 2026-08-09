@@ -50,4 +50,24 @@ test.describe('카카오 지도', () => {
 
     expect(Buffer.compare(withHint, withoutHint)).not.toBe(0)
   })
+
+  // 약도는 지도의 폴백이 아니라 독립된 안내다. 지도가 못 떠도 남아야 하고,
+  // 지도가 잘 떠도 함께 보여야 한다 — 출구 번호와 주차장 진입 방향은 일반 지도에 없다.
+  test('식장 약도가 지도와 별개로 항상 보인다', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('section').filter({ hasText: '오시는 길' }).scrollIntoViewIfNeeded()
+
+    const map = page.locator('img[src*="map.webp"]')
+    await expect(map).toBeVisible()
+
+    // 원본이 3542x2488인데 폰에서는 340px 남짓으로 들어가 잔글씨를 읽을 수 없다.
+    // 확대 경로가 없으면 약도를 실은 의미가 없으므로, 링크로 감싸였는지 확인한다.
+    const link = page.locator('a[href*="map.webp"]')
+    await expect(link).toHaveCount(1)
+    await expect(link.locator('img[src*="map.webp"]')).toHaveCount(1)
+
+    // 원본이 실제로 받아지는지. 링크가 404면 탭했을 때 아무것도 안 나온다.
+    const href = (await link.getAttribute('href'))!
+    expect((await page.request.get(href)).status()).toBe(200)
+  })
 })

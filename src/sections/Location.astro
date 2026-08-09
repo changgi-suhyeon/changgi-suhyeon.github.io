@@ -41,21 +41,10 @@ const accordions = [
     {v.addressDetail}
   </p>
 
-  {/* 정적 이미지를 먼저 깔고 그 위에 인터랙티브 지도를 절대배치한다.
-      순서가 핵심이다 — 지도가 못 뜨는 경로가 여럿이고(키 미설정, 카카오 콘솔에
-      배포 도메인 미등록, 인앱 웹뷰의 스크립트 차단), 그때 하객에게 빈 회색 박스를
-      보여주는 대신 이미지가 그대로 남는다. JS가 아예 없어도 이 <img>는 뜬다.
-      비율은 식장 공식 약도(3542x2488 = 1.424)에 맞춘다. 16:9로 두면 object-cover가
-      약도의 좌우를 잘라 '청량리 청과물도매시장'과 '회기역 동부간선도로' 라벨이 사라진다.
-      약도를 교체하면 이 비율도 함께 확인할 것. 높이를 미리 확보해야 카카오 지도가
-      0px 높이로 초기화되지 않으므로, 비어 있는 비율이어서는 안 된다. */}
-  <div class="relative mt-6 w-full aspect-[3542/2488] overflow-hidden rounded-lg border"
-       style="border-color: var(--line)">
-    <img src={v.map.staticImage} alt={`${v.name} 위치 지도`}
-         width="960" height="540" loading="lazy" decoding="async"
-         class="w-full h-full object-cover" />
-    <KakaoMap lat={v.lat} lng={v.lng} label={v.name} client:visible />
-  </div>
+  {/* 인터랙티브 지도. 상자(비율·테두리)는 이 컴포넌트가 직접 갖는다 — 못 뜰 때
+      스스로 렌더를 접어 빈 테두리를 남기지 않기 위해서다. 실패해도 아래 약도가
+      길안내를 이어받으므로 이 영역이 사라져도 하객이 잃는 것이 없다. */}
+  <KakaoMap lat={v.lat} lng={v.lng} label={v.name} client:visible />
 
   {mapApps.length > 0 && (
     <div class:list={['mt-3 grid gap-2', mapGridClass]}>
@@ -66,6 +55,25 @@ const accordions = [
       ))}
     </div>
   )}
+
+  {/* 식장 공식 약도. 출구 번호와 주차장 진입 방향이 표시돼 있어 일반 지도보다
+      길안내가 직관적이다.
+
+      <a>로 감싸 탭하면 원본이 열리게 한다. 원본이 3542x2488인데 폰에서는 342px 폭으로
+      들어가 버스 번호와 출구 표시가 4px 수준이 된다 — 그냥 깔아두면 읽을 수 없다.
+      브라우저 기본 이미지 뷰어는 핀치줌을 지원하므로 JS 없이 확대가 되고, 카카오톡
+      인앱 브라우저에서도 동작한다. 라이트박스를 재사용하지 않는 이유이기도 하다. */}
+  <a href={v.map.staticImage} target="_blank" rel="noopener noreferrer"
+     class="mt-6 block rounded-lg border overflow-hidden"
+     style="border-color: var(--line)"
+     aria-label={`${v.name} 약도 원본 크기로 보기`}>
+    <img src={v.map.staticImage} alt={`${v.name} 약도 — 지하철 출구와 주차장 진입 방향`}
+         width="1440" height="1012" loading="lazy" decoding="async"
+         class="w-full h-auto" />
+  </a>
+  <p class="mt-2 text-center text-xs" style="color: var(--muted)">
+    약도를 탭하면 크게 볼 수 있어요
+  </p>
 
   {accordions.length > 0 && (
     <div class="mt-6 space-y-2">

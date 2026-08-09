@@ -61,7 +61,20 @@ export default function KakaoMap({ lat, lng, label, level = 3 }: Props) {
   // 지도 위에 닿으면 스크롤 대신 지도가 끌려가 페이지에 갇히기 때문이다.
   // 한 번 탭하면 그때부터 조작할 수 있다.
   const [active, setActive] = useState(false)
+  // 정해진 시간 안에 지도가 안 뜨면 영역을 통째로 접는다. 예전에는 아래에 정적 약도를
+  // 깔아두고 그 위를 덮는 구조라 실패해도 볼 것이 남았지만, 약도를 섹션 아래로 옮긴
+  // 뒤로는 여기 남는 것이 테두리만 있는 빈 상자다. 그건 고장 난 것처럼 보인다.
+  const [failed, setFailed] = useState(false)
   const mapRef = useRef<KakaoMapInstance | null>(null)
+
+  // 키가 있어도 못 뜨는 경로가 여럿이다 — 카카오 콘솔에 배포 도메인 미등록(401),
+  // 인앱 웹뷰의 스크립트 차단, 네트워크 실패. 어느 경우든 onerror가 오지 않을 수 있어
+  // 시간으로 끊는다. 12초는 느린 모바일 회선에서도 정상 로드가 끝나고 남는 여유다.
+  useEffect(() => {
+    if (!HAS_KAKAO || ready) return
+    const id = setTimeout(() => setFailed(true), 12_000)
+    return () => clearTimeout(id)
+  }, [ready])
 
   useEffect(() => {
     if (!HAS_KAKAO) return
@@ -124,7 +137,7 @@ export default function KakaoMap({ lat, lng, label, level = 3 }: Props) {
     }
   }, [lat, lng, label, level])
 
-  if (!HAS_KAKAO) return null
+  if (!HAS_KAKAO || failed) return null
 
   function activate() {
     const map = mapRef.current
@@ -135,11 +148,18 @@ export default function KakaoMap({ lat, lng, label, level = 3 }: Props) {
   }
 
   return (
-    <>
-      {/* 지도가 준비되기 전에는 투명하게 둔다. 뒤에 깔린 정적 이미지가 그대로 보이고,
-          준비되면 그 위를 덮는다. display:none으로 숨기면 컨테이너 크기가 0이라
-          지도가 잘못된 크기로 초기화된다. */}
-      {/* zIndex: 0 이 반드시 있어야 한다. 이 값이 없으면(z-index:auto) 이 div는
+    // 비율·테두리를 이 컴포넌트가 직접 갖는다. 예전에는 Location.astro의 div가 정적
+    // 약도와 지도를 함께 담았지만, 약도가 섹션 아래로 독립하면서 이 상자에는 지도밖에
+    // 없다. 그러면 상자의 수명도 지도와 같아야 한다 — 못 뜰 때 위에서 null을 반환하면
+    // 빈 테두리만 남는 대신 영역이 통째로 접힌다.
+    <div
+      className="relative mt-6 w-full aspect-[3542/2488] overflow-hidden rounded-lg border"
+      style={{ borderColor: 'var(--line)' }}
+    >
+      {/* 준비 전에는 투명하게 둔다. display:none으로 숨기면 컨테이너 크기가 0이라
+          지도가 잘못된 크기로 초기화된다.
+
+          zIndex: 0 이 반드시 있어야 한다. 이 값이 없으면(z-index:auto) 이 div는
           스태킹 컨텍스트를 만들지 않고, 카카오 지도가 내부에 만드는 양수 z-index
           요소들이 루트 스태킹 컨텍스트까지 올라와 아래 안내 버튼 **위에** 그려진다.
           그 레이어들은 pointer-events:none이라 클릭은 버튼에 그대로 닿는다 —
@@ -173,6 +193,6 @@ export default function KakaoMap({ lat, lng, label, level = 3 }: Props) {
           </span>
         </button>
       )}
-    </>
+    </div>
   )
 }
