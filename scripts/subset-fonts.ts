@@ -93,10 +93,16 @@ async function main() {
       `  참고: 정적 HTML에 없어 강제 포함으로 채운 감시 대상 글자: ${rescued.join(' ')}`,
     )
   }
-  console.log(
-    `  주의: 원본 폰트에 glyph가 없어 서브셋으로 해결 불가능한 글자: ` +
-      `${NOT_IN_SOURCE_FONTS.join(' ')} (항상 시스템 폴백 서체로 렌더됨)`,
-  )
+  // 실제로 페이지에 등장할 때만 경고한다. 무조건 찍으면 혼주가 모두 생존해
+  // 菊이 어디에도 없는 빌드에서까지 "해결 불가능한 문제가 있다"고 말하게 되고,
+  // 매 빌드 반복되는 거짓 경고는 진짜 경고가 떴을 때 읽히지 않게 만든다.
+  const unfixable = NOT_IN_SOURCE_FONTS.filter((c) => collected.has(c))
+  if (unfixable.length > 0) {
+    console.log(
+      `  주의: 원본 폰트에 glyph가 없어 서브셋으로 해결 불가능한 글자: ` +
+        `${unfixable.join(' ')} (항상 시스템 폴백 서체로 렌더됨)`,
+    )
+  }
 
   await mkdir(OUT_DIR, { recursive: true })
 

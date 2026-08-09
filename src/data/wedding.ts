@@ -1,10 +1,5 @@
 import galleryJson from './gallery.json'
 
-// 지도앱 검색에 쓰는 질의. venue.address 전체(건물명 포함)를 넣으면 검색이 어긋날 수 있어
-// 도로명 주소만 쓴다. 두 값은 의도적으로 다르며, 식장이 바뀌면 둘 다 함께 고쳐야 한다.
-// 딥링크는 이 상수에서만 파생되므로 여기 한 곳만 고치면 세 링크가 함께 따라온다.
-const VENUE_SEARCH_QUERY = '서울 동대문구 왕산로 200'
-
 // 식장 좌표(WGS84). OpenStreetMap이 '롯데캐슬 SKY-L65 랜드마크타워'로 표기하는 지점이며,
 // 예식장이 있는 타워동이다(단지 내 주거동은 남서쪽 37.5789, 127.0450 쪽이라 다르다).
 // 인터랙티브 지도의 중심·마커와 티맵 딥링크가 모두 이 한 쌍에서 나온다.
@@ -18,29 +13,37 @@ export const wedding = {
   date: '2026-10-31T12:00:00+09:00',
 
   groom: {
-    name: '',
+    name: '홍창기',
     order: '장남',
-    father: { name: '', deceased: false },
-    mother: { name: '', deceased: false },
+    father: { name: '홍성수', deceased: false },
+    mother: { name: '박종희', deceased: false },
   },
   bride: {
-    name: '',
+    name: '정수현',
     order: '장녀',
-    father: { name: '', deceased: false },
-    mother: { name: '', deceased: false },
+    father: { name: '정성택', deceased: false },
+    mother: { name: '김경란', deceased: false },
   },
 
   venue: {
     name: 'L65호텔웨딩컨벤션',
     hall: '타워동 6층 가든홀',
     address: '서울 동대문구 왕산로 200 청량리역 롯데캐슬스카이-L65',
-    tel: '', // 식장 대표번호 — 개인정보가 아니므로 여기 둔다
+    tel: '02-2184-4500', // 식장 대표번호 — 개인정보가 아니므로 여기 둔다
     lat: VENUE_LAT,
     lng: VENUE_LNG,
     map: {
-      // 좌표 없이도 되는 주소 검색 딥링크. 실제 식장 위치로 검색 결과가 뜬다.
-      kakao: `https://map.kakao.com/link/search/${encodeURIComponent(VENUE_SEARCH_QUERY)}`,
-      naver: `https://map.naver.com/p/search/${encodeURIComponent(VENUE_SEARCH_QUERY)}`,
+      // 검색이 아니라 장소 ID 직링크다. 검색은 동명의 다른 장소가 먼저 뜰 수 있지만
+      // 이건 곧장 식장으로 간다. 대신 각 지도 서비스에서 따로 얻어야 하므로,
+      // 식장이 바뀌면 아래 좌표와 함께 이 두 줄도 손으로 고쳐야 한다.
+      //
+      // 확인된 목적지(2026-08-09):
+      //   kakao → 'L65호텔웨딩컨벤션 | 카카오맵'
+      //   naver → map.naver.com/p/entry/place/13171608
+      // naver.me는 단축 URL이라 열어보기 전엔 어디로 가는지 알 수 없다. 위 목적지를
+      // 적어두는 이유이며, 링크를 갈아끼울 때는 실제로 열어 확인할 것.
+      kakao: 'https://place.map.kakao.com/1274388923',
+      naver: 'https://naver.me/xyTG1krB',
       // 티맵은 검색이 아니라 좌표로 목적지를 잡는다. goalx가 경도, goaly가 위도다 —
       // 순서가 x=경도라 위경도 표기와 반대다. 바꿔 넣으면 서해 한복판을 안내한다.
       tmap:
