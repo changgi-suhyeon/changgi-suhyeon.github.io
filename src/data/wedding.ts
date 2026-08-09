@@ -65,7 +65,24 @@ export const wedding = {
   meal: { type: '', hours: '', reception: null as null | { place: string; at: string } },
   shuttle: { departAt: '', boardingPoint: '' }, // 담당자 연락처는 privateData.phones.shuttle
 
-  greeting: '',
+  // 이 문자열의 줄바꿈이 곧 화면 레이아웃이다 — Invitation.astro가 whitespace-pre-line으로
+  // 그대로 그린다. 그래서 한 줄이 한 행이 되도록 문자열을 줄 단위로 이어 붙였다.
+  //
+  // 줄 길이 상한은 22자다(iPhone 13 기준 문단 폭 342px, 명조 16px, 한 글자 14.9px).
+  // 넘으면 자동 줄바꿈이 끼어들어 의도한 행 나눔이 무너진다. 작은 폰까지 감안해
+  // 17자 이하로 맞췄으니, 문구를 고칠 때도 그 선을 지킬 것.
+  greeting:
+    '우연처럼 찾아온 인연이\n' +
+    '어느새 서로의 하루가 되었습니다.\n' +
+    '\n' +
+    '같이 웃고 함께 꿈꾸며\n' +
+    '깊어진 마음 끝에\n' +
+    '가을이 가장 깊어지는 날\n' +
+    '같은 길을 걷기로 했습니다.\n' +
+    '\n' +
+    '이 좋은 날 걸음 하시어\n' +
+    '저희의 첫걸음을 축복해 주시면\n' +
+    '오래도록 따뜻하게 간직하겠습니다.',
   gallery: galleryJson as GalleryPhoto[],
   bgm: { src: '', title: '', credit: '' },
 }
