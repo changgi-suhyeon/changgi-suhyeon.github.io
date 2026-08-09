@@ -32,17 +32,24 @@ const accordions = [
 <section class="shell py-14 reveal">
   <SectionLabel en="LOCATION" ko="오시는 길" />
 
+  {/* 줄 나눔은 데이터가 정한다(wedding.ts의 address / addressDetail 주석 참고).
+      한 문자열로 두면 하이픈에서 끊겨 'L65'만 다음 줄에 홀로 남는데, CSS로는
+      고칠 수 없는 자리다. */}
   <p class="text-center text-sm leading-loose">
     <strong style="color: var(--ink)">{v.name} {v.hall}</strong><br />
-    {v.address}
+    {v.address}<br />
+    {v.addressDetail}
   </p>
 
   {/* 정적 이미지를 먼저 깔고 그 위에 인터랙티브 지도를 절대배치한다.
       순서가 핵심이다 — 지도가 못 뜨는 경로가 여럿이고(키 미설정, 카카오 콘솔에
       배포 도메인 미등록, 인앱 웹뷰의 스크립트 차단), 그때 하객에게 빈 회색 박스를
       보여주는 대신 이미지가 그대로 남는다. JS가 아예 없어도 이 <img>는 뜬다.
-      aspect-video로 높이를 미리 확보해야 지도가 0px 높이로 초기화되지 않는다. */}
-  <div class="relative mt-6 w-full aspect-video overflow-hidden rounded-lg border"
+      비율은 식장 공식 약도(3542x2488 = 1.424)에 맞춘다. 16:9로 두면 object-cover가
+      약도의 좌우를 잘라 '청량리 청과물도매시장'과 '회기역 동부간선도로' 라벨이 사라진다.
+      약도를 교체하면 이 비율도 함께 확인할 것. 높이를 미리 확보해야 카카오 지도가
+      0px 높이로 초기화되지 않으므로, 비어 있는 비율이어서는 안 된다. */}
+  <div class="relative mt-6 w-full aspect-[3542/2488] overflow-hidden rounded-lg border"
        style="border-color: var(--line)">
     <img src={v.map.staticImage} alt={`${v.name} 위치 지도`}
          width="960" height="540" loading="lazy" decoding="async"
