@@ -343,7 +343,12 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
         {status === 'sending' ? '전달 중…' : '전달하기'}
       </button>
 
-      <p className="text-center text-[13px] leading-relaxed" style={{ color: 'var(--muted)' }}>
+      {/* text-balance가 없으면 390px 폭에서 마지막 줄에 '다.' 한 글자만 떨어져 나온다.
+          두 줄 길이를 고르게 나눠 그 고아 줄을 없앤다. */}
+      <p
+        className="text-center text-[13px] leading-relaxed text-balance"
+        style={{ color: 'var(--muted)' }}
+      >
         입력하신 정보는 예식 준비 목적으로만 사용하며 예식 후 파기합니다.
       </p>
     </form>
