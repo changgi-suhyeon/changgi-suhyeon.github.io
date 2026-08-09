@@ -2,8 +2,9 @@
 import Base from '../layouts/Base.astro'
 import AdminDashboard from '../components/AdminDashboard'
 ---
+{/* robots noindex는 Base.astro가 모든 페이지에 넣는다. 여기 있던 중복은 지웠다 —
+    두 곳에 있으면 한쪽을 고칠 때 다른 쪽을 놓친다. Base의 그 줄을 지우지 말 것. */}
 <Base title="RSVP 조회">
-  <meta name="robots" content="noindex, nofollow" slot="head" />
   <main>
     <AdminDashboard client:only="react" />
   </main>

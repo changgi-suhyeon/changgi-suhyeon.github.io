@@ -19,6 +19,18 @@ const pageUrl = new URL(Astro.url.pathname, Astro.site).href
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
+    {/* 검색엔진 색인 차단. 하객에게 링크로 직접 전달하는 청첩장이라 검색 결과에
+        신랑·신부와 혼주 성함, 식장, 일시가 노출될 이유가 없다. 모든 페이지에
+        적용되도록 여기 레이아웃에 둔다 — 페이지마다 넣으면 새 페이지에서 빠진다.
+
+        **robots.txt로 막지 않는다.** Disallow는 '읽지 마라'라서 크롤러가 이 meta를
+        읽지 못하고, 외부에 링크가 있으면 내용 없이 URL만 검색 결과에 남을 수 있다.
+        색인을 막으려면 크롤러가 페이지를 읽고 이 태그를 보게 해야 한다.
+
+        카카오톡·페이스북의 링크 미리보기 스크래퍼는 색인 크롤러가 아니라 영향받지
+        않는다. 아래 og:* 태그를 읽으려면 어차피 페이지를 가져와야 하고, noindex는
+        '가져오지 마라'가 아니라 '검색 결과에 넣지 마라'다. */}
+    <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     <meta property="og:type" content="website" />
