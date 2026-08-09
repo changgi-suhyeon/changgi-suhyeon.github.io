@@ -1,17 +1,10 @@
 ---
 import { wedding } from '../data/wedding'
+import { getWeddingDateParts } from '../lib/wedding-date'
 
-const d = new Date(wedding.date)
-const kst = new Date(d.getTime() + 9 * 3600 * 1000)
-const y = kst.getUTCFullYear()
-const m = kst.getUTCMonth() + 1
-const day = kst.getUTCDate()
-const weekday = ['SUN','MON','TUE','WED','THU','FRI','SAT'][kst.getUTCDay()]
-const hour = kst.getUTCHours()
-const minute = kst.getUTCMinutes()
-const ampm = hour < 12 ? '오전' : '오후'
-const h12 = hour % 12 === 0 ? 12 : hour % 12
-const timeText = minute === 0 ? `${ampm} ${h12}시` : `${ampm} ${h12}시 ${minute}분`
+// 표준시 처리와 요일·시각 문자열은 wedding-date.ts 한 곳에만 둔다.
+// og:description도 같은 원본에서 나오므로 여기서 따로 조립하면 갈라진다.
+const { year: y, month: m, day, weekdayEn: weekday, timeText } = getWeddingDateParts(wedding.date)
 ---
 <section class="shell pt-14 pb-12 text-center">
   <p class="font-sans-kr text-[11px] tracking-[0.3em]" style="color: var(--muted)">

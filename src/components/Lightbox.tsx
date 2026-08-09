@@ -9,6 +9,18 @@ interface Props {
 const SWIPE_MIN_PX = 50
 
 /**
+ * 대체 텍스트. gallery.json의 alt가 비어 있으면 순번으로 채운다.
+ *
+ * 데이터에 38번 적어두지 않는 이유가 두 가지 있다. 하나는 `npm run photos`가 매 실행마다
+ * gallery.json을 통째로 덮어쓰므로 손으로 채운 값이 사진을 교체하는 날 조용히 날아간다는
+ * 것이고, 다른 하나는 순번이라는 규칙을 한 곳에만 두는 편이 낫다는 것이다.
+ * 나중에 특정 사진에 진짜 설명을 넣고 싶으면 그 항목의 alt만 채우면 이 폴백을 이긴다.
+ */
+function altFor(photo: GalleryPhoto, index: number): string {
+  return photo.alt.trim() || `웨딩 사진 ${index + 1}`
+}
+
+/**
  * 큰 사진 한 장과 로딩 표시.
  *
  * 별도 컴포넌트인 이유는 로딩 상태를 이펙트로 되돌리지 않기 위해서다. 부모가
@@ -20,7 +32,7 @@ const SWIPE_MIN_PX = 50
  * ref 콜백의 complete 확인은 그 위의 보험이다. 엘리먼트가 붙는 시점에 이미
  * 로드가 끝나 있으면 onLoad가 오지 않을 수 있다.
  */
-function LightboxImage({ photo }: { photo: GalleryPhoto }) {
+function LightboxImage({ photo, index }: { photo: GalleryPhoto; index: number }) {
   const [loaded, setLoaded] = useState(false)
 
   return (
@@ -33,7 +45,7 @@ function LightboxImage({ photo }: { photo: GalleryPhoto }) {
           if (el?.complete && el.naturalWidth > 0) setLoaded(true)
         }}
         src={`${photo.base}-1620.webp`}
-        alt={photo.alt}
+        alt={altFor(photo, index)}
         width={photo.width}
         height={photo.height}
         onLoad={() => setLoaded(true)}
@@ -140,7 +152,7 @@ export default function Lightbox({ photos }: Props) {
             >
               <img
                 src={`${photo.base}-640.webp`}
-                alt={photo.alt}
+                alt={altFor(photo, i)}
                 loading="lazy"
                 decoding="async"
                 width={photo.width}
@@ -195,7 +207,7 @@ export default function Lightbox({ photos }: Props) {
             go(dx > 0 ? -1 : 1)
           }}
         >
-          <LightboxImage key={photos[index]!.base} photo={photos[index]!} />
+          <LightboxImage key={photos[index]!.base} photo={photos[index]!} index={index} />
 
           <button
             type="button"

@@ -13,10 +13,12 @@ import Share from '../sections/Share.astro'
 import Footer from '../sections/Footer.astro'
 import BgmToggle from '../components/BgmToggle'
 import { wedding } from '../data/wedding'
+import { formatShareDescription } from '../lib/wedding-date'
 
 // 카카오톡에 링크가 붙여넣어질 때 스크래퍼가 읽는 og:description의 출처.
-// 비워두면 빈 미리보기가 나가므로 Share 섹션과 같은 문구를 쓴다.
-const description = `${wedding.venue.name} ${wedding.venue.hall}`
+// Share 섹션의 공유 카드와 반드시 같은 문자열이어야 하므로, 각자 조립하지 않고
+// formatShareDescription 하나만 부른다.
+const description = formatShareDescription(wedding.date)
 ---
 <Base title={`${wedding.groom.name} · ${wedding.bride.name} 결혼합니다`} description={description}>
   <main>
