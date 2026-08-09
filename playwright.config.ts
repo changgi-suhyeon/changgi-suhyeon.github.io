@@ -6,6 +6,17 @@ const WORKER = 'http://localhost:8787'
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
+  // 직렬 실행. 두 가지 이유가 있고 둘 다 실측이다.
+  //
+  // 1) 병렬이 더 느리다. 이 스위트는 wall-clock의 대부분이 webServer 기동(빌드 +
+  //    astro preview + wrangler dev)이라 테스트 자체를 나눠 봐야 이득이 없다.
+  //    실측: --workers=1 33.1초, --workers=2 42.7초.
+  // 2) 병렬이면 불안정하다. 두 브라우저 컨텍스트가 CPU를 다투면 아일랜드 하이드레이션이
+  //    늦어지고, 그 사이에 들어간 '전달하기' 클릭이 씹혀 요청이 아예 나가지 않는다.
+  //    그러면 성공 문구도 에러 박스도 없어 "계약이 깨졌다"처럼 보이는데 실은 환경 문제다.
+  //    이 스위트의 목적은 두 저장소의 계약 검증이므로, 그 신호를 흐리는 실패는
+  //    없느니만 못하다. E2E는 CI에서 돌지 않으니 병렬로 아낄 시간도 없다.
+  workers: 1,
   use: { baseURL: SITE },
   webServer: [
     {

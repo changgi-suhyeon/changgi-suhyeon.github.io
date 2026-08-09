@@ -139,17 +139,30 @@ export default function KakaoMap({ lat, lng, label, level = 3 }: Props) {
       {/* 지도가 준비되기 전에는 투명하게 둔다. 뒤에 깔린 정적 이미지가 그대로 보이고,
           준비되면 그 위를 덮는다. display:none으로 숨기면 컨테이너 크기가 0이라
           지도가 잘못된 크기로 초기화된다. */}
+      {/* zIndex: 0 이 반드시 있어야 한다. 이 값이 없으면(z-index:auto) 이 div는
+          스태킹 컨텍스트를 만들지 않고, 카카오 지도가 내부에 만드는 양수 z-index
+          요소들이 루트 스태킹 컨텍스트까지 올라와 아래 안내 버튼 **위에** 그려진다.
+          그 레이어들은 pointer-events:none이라 클릭은 버튼에 그대로 닿는다 —
+          즉 버튼은 눌리는데 화면에는 안 보인다. 실측으로 확인한 증상이고,
+          elementFromPoint는 히트 테스트 기준이라 "맨 위"라고 답해 진단을 어렵게 한다. */}
       <div
         ref={containerRef}
         aria-hidden={!ready}
         className="absolute inset-0 rounded-lg"
-        style={{ opacity: ready ? 1 : 0, pointerEvents: ready && active ? 'auto' : 'none' }}
+        style={{
+          opacity: ready ? 1 : 0,
+          pointerEvents: ready && active ? 'auto' : 'none',
+          zIndex: 0,
+        }}
       />
       {ready && !active && (
         <button
           type="button"
           onClick={activate}
           className="absolute inset-0 flex items-end justify-center rounded-lg pb-3"
+          // 위 지도 div가 스태킹 컨텍스트(zIndex 0)라 그 안의 z-index는 여기까지 못 넘어온다.
+          // 형제인 이 버튼은 1이면 충분하다.
+          style={{ zIndex: 1 }}
           aria-label="지도 조작 활성화"
         >
           <span
