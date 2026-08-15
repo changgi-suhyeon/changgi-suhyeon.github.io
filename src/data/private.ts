@@ -118,8 +118,23 @@ const DECEASED_PHONE_KEYS: PhoneKey[] = [
   ...(wedding.bride.mother.deceased ? (['brideMother'] as const) : []),
 ]
 
+// 전세버스를 운행하지 않으면 담당자 번호도 필요 없다. Shuttle.astro는 departAt과
+// boardingPoint가 모두 비면 섹션 자체를 렌더하지 않으므로 phones.shuttle을 아무도
+// 읽지 않는데, 그런데도 필수로 요구하면 쓰지도 않을 번호를 지어내야 한다.
+// 지어낸 번호는 결국 어딘가에서 탭 가능한 버튼이 되므로(I3와 같은 부류) 조건을 맞춘다.
+// 판정 기준을 Shuttle.astro의 hasContent와 똑같이 두는 것이 중요하다 — 어긋나면
+// 섹션은 뜨는데 번호는 빈 문자열이라 `tel:`만 걸린 버튼이 생긴다.
+const SHUTTLE_RUNS = Boolean(
+  wedding.shuttle.departAt.trim() || wedding.shuttle.boardingPoint.trim(),
+)
+
+const OPTIONAL_PHONE_KEYS: PhoneKey[] = [
+  ...DECEASED_PHONE_KEYS,
+  ...(SHUTTLE_RUNS ? [] : (['shuttle'] as const)),
+]
+
 export const privateData: PrivateData = parsePrivateData(
   import.meta.env.WEDDING_PRIVATE as string | undefined,
   import.meta.env.PROD,
-  PHONE_KEYS.filter((key) => !DECEASED_PHONE_KEYS.includes(key)),
+  PHONE_KEYS.filter((key) => !OPTIONAL_PHONE_KEYS.includes(key)),
 )

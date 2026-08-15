@@ -125,3 +125,34 @@ describe('parsePrivateData — 개발', () => {
     expect(parsePrivateData(complete, false).phones.groom).toBe('010-1111-1111')
   })
 })
+
+describe('선택 전화번호 키', () => {
+  const base = {
+    phones: {
+      groom: '010-1111-1111', groomFather: '010-1111-1111', groomMother: '010-1111-1111',
+      bride: '010-1111-1111', brideFather: '010-1111-1111', brideMother: '010-1111-1111',
+      shuttle: '',
+    },
+    accounts: {
+      groom: [{ bank: '테스트', number: '000-0000-000000', holder: '신랑', kakaopay: null }],
+      bride: [{ bank: '테스트', number: '000-0000-000000', holder: '신부', kakaopay: null }],
+    },
+  }
+  const REQUIRED_WITHOUT_SHUTTLE = [
+    'groom', 'groomFather', 'groomMother', 'bride', 'brideFather', 'brideMother',
+  ] as const
+
+  // 전세버스를 운행하지 않으면 Shuttle.astro가 섹션을 렌더하지 않아 이 번호를 아무도
+  // 읽지 않는다. 그런데도 필수로 두면 쓰지도 않을 번호를 지어내야 하고, 지어낸 번호는
+  // 결국 탭 가능한 버튼이 된다.
+  it('필수 목록에서 빠진 키는 비어 있어도 통과하고 빈 문자열로 정규화된다', () => {
+    const parsed = parsePrivateData(JSON.stringify(base), true, REQUIRED_WITHOUT_SHUTTLE)
+    expect(parsed.phones.shuttle).toBe('')
+  })
+
+  // 반대 방향도 봉인한다 — 운행할 때는 비어 있으면 빌드를 멈춰야 한다.
+  // 이게 없으면 섹션은 뜨는데 `tel:`만 걸린 버튼이 하객에게 나간다.
+  it('필수 목록에 있으면 비어 있을 때 빌드를 멈춘다', () => {
+    expect(() => parsePrivateData(JSON.stringify(base), true)).toThrow(/shuttle/)
+  })
+})
