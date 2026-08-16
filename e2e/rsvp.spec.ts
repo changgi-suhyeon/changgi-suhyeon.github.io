@@ -31,8 +31,9 @@ test.describe('RSVP 제출', () => {
     await page.getByRole('button', { name: '신랑측' }).click()
     await page.getByLabel('성함').fill('테스트하객')
     await page.getByRole('button', { name: '참석', exact: true }).click()
-    await page.getByLabel('본인 포함 총 참석 인원').fill('2')
-    await page.getByLabel('식사하실 인원').fill('2')
+    await page.getByRole('button', { name: '참석 인원 한 명 늘리기' }).click()   // 1 → 2
+    await expect(page.getByLabel('참석 인원', { exact: true })).toHaveText('2')
+    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('2')   // 클램프가 따라 올린 값이 아니라 초기값 유지
 
     // 서버는 폼이 뜬 뒤 3초가 지나야 사람으로 본다(허니팟과 함께 Turnstile을 대신하는
     // 봇 방어). 이 대기가 없으면 자동화가 사람보다 빨라 400을 받고, 그것이 계약 불일치로
@@ -45,37 +46,49 @@ test.describe('RSVP 제출', () => {
     await expect(page.getByText('참석 여부를 전달했습니다')).toBeVisible({ timeout: 15_000 })
   })
 
-  test('불참을 고르면 인원 입력이 사라진다', async ({ page }) => {
+  test('불참을 고르면 인원 선택이 사라진다', async ({ page }) => {
     await page.getByRole('button', { name: '참석', exact: true }).click()
-    await expect(page.getByLabel('본인 포함 총 참석 인원')).toBeVisible()
+    await expect(page.getByLabel('참석 인원', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: '불참' }).click()
-    await expect(page.getByLabel('본인 포함 총 참석 인원')).toBeHidden()
-    await expect(page.getByLabel('식사하실 인원')).toBeHidden()
+    await expect(page.getByLabel('참석 인원', { exact: true })).toBeHidden()
+    await expect(page.getByLabel('식사 인원', { exact: true })).toBeHidden()
   })
 
   test('참석 인원을 줄이면 식사 인원이 따라 줄어든다', async ({ page }) => {
     await page.getByRole('button', { name: '참석', exact: true }).click()
-    await page.getByLabel('본인 포함 총 참석 인원').fill('5')
-    await page.getByLabel('식사하실 인원').fill('5')
-    await page.getByLabel('본인 포함 총 참석 인원').fill('2')
+    const partyUp = page.getByRole('button', { name: '참석 인원 한 명 늘리기' })
+    const partyDown = page.getByRole('button', { name: '참석 인원 한 명 줄이기' })
+    const mealUp = page.getByRole('button', { name: '식사 인원 한 명 늘리기' })
+
+    for (let i = 0; i < 4; i++) await partyUp.click()   // 1 → 5
+    for (let i = 0; i < 4; i++) await mealUp.click()    // 1 → 5
+    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('5')
+
+    for (let i = 0; i < 3; i++) await partyDown.click() // 5 → 2
 
     // 이 정방향 단언이 없으면 클램프를 통째로 지워도 테스트가 통과한다.
-    await expect(page.getByLabel('식사하실 인원')).toHaveValue('2')
+    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('2')
   })
 
-  test('인원 칸을 지웠다 다시 채워도 식사 인원이 0으로 굳지 않는다', async ({ page }) => {
-    // Number('')는 0이다. 가드가 없으면 백스페이스로 칸이 비는 찰나에
-    // 클램프가 식사 인원을 0으로 확정하고, 다시 3을 입력해도 되돌아오지 않는다.
-    // 서버는 0 <= 0 <= 3이라 정상 수락하므로 `참석 3명 · 식사 0명`이 조용히 저장된다.
+  // 예전에는 자유 입력이라 하객이 칸을 비우는 찰나에 Number('')가 0이 되어 식사 인원이
+  // 0으로 굳었다(F4). 서버는 0 <= 0 <= n이라 정상 수락하므로 '참석 3명 · 식사 0명'이
+  // 조용히 저장됐다. 스테퍼는 그 상태를 만들 방법 자체를 없앤다 — 아래 두 단언이
+  // 그 성질을 지킨다. 자유 입력으로 되돌리면 이 테스트가 먼저 깨진다.
+  test('참석 인원은 1 미만으로, 식사 인원은 참석 인원 위로 갈 수 없다', async ({ page }) => {
     await page.getByRole('button', { name: '참석', exact: true }).click()
-    await page.getByLabel('본인 포함 총 참석 인원').fill('3')
-    await page.getByLabel('식사하실 인원').fill('3')
 
-    await page.getByLabel('본인 포함 총 참석 인원').fill('')
-    await page.getByLabel('본인 포함 총 참석 인원').fill('3')
+    // 초기값 1에서 '줄이기'가 비활성이라 0을 만들 수 없다.
+    await expect(page.getByRole('button', { name: '참석 인원 한 명 줄이기' })).toBeDisabled()
+    await expect(page.getByLabel('참석 인원', { exact: true })).toHaveText('1')
 
-    await expect(page.getByLabel('식사하실 인원')).toHaveValue('3')
+    // 식사 인원의 '늘리기'는 참석 인원에서 막힌다.
+    await expect(page.getByRole('button', { name: '식사 인원 한 명 늘리기' })).toBeDisabled()
+    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('1')
+
+    // 참석 인원을 올리면 그만큼 식사 인원도 올릴 수 있게 풀린다.
+    await page.getByRole('button', { name: '참석 인원 한 명 늘리기' }).click()
+    await expect(page.getByRole('button', { name: '식사 인원 한 명 늘리기' })).toBeEnabled()
   })
 
   test('성함 없이 제출하면 서버 검증 오류가 인라인으로 뜬다', async ({ page }) => {

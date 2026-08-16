@@ -16,6 +16,57 @@ const STORAGE_KEY = 'rsvp-submitted'
 
 type Status = 'idle' | 'sending' | 'done' | 'error'
 
+/**
+ * 인원 선택 스테퍼.
+ *
+ * 자유 입력 대신 버튼만 두는 이유는 편의가 아니라 정확성이다. `<input type="number">`로
+ * 두면 하객이 값을 지우는 순간 `Number('')`가 0이 되어 상태가 0으로 내려간다.
+ * 그 상태에서 숫자를 치면 '05'처럼 앞자리 0이 남아 하객이 그것을 또 지워야 하고,
+ * 무엇보다 **0이 유효한 값처럼 서버까지 갈 수 있다** — 식사 인원이 조용히 0으로
+ * 굳어 식대가 모자라는 사고가 실제로 이 경로였다(F4). 버튼만 두면 값이 [min, max]를
+ * 벗어나는 상태 자체가 만들어지지 않아 그 부류의 버그가 통째로 사라진다.
+ *
+ * 폰에서 숫자 키보드가 뜨지 않는 것도 이득이다 — 어른 하객 기준의 44px 터치 타겟을
+ * 두 번 누르는 편이 키보드를 띄워 지우고 다시 치는 것보다 쉽다.
+ */
+function Stepper({
+  id, value, min, max, onChange, label,
+}: {
+  id: string
+  value: number
+  min: number
+  max: number
+  onChange: (next: number) => void
+  label: string
+}) {
+  const btn =
+    'w-11 h-11 shrink-0 rounded border text-lg leading-none disabled:opacity-30 ' +
+    'flex items-center justify-center'
+  const btnStyle = { borderColor: 'var(--line)', color: 'var(--ink)' }
+
+  return (
+    <div className="flex items-center gap-3">
+      <button type="button" className={btn} style={btnStyle}
+              onClick={() => onChange(Math.max(min, value - 1))}
+              disabled={value <= min}
+              aria-label={`${label} 한 명 줄이기`}>−</button>
+      {/* aria-live가 있어야 스크린리더 사용자가 버튼을 눌렀을 때 바뀐 값을 듣는다.
+          없으면 눌러도 아무 안내가 없어 몇 명이 됐는지 알 수 없다.
+          aria-label도 반드시 있어야 한다 — 없으면 이 숫자에 접근 가능한 이름이 없어
+          "2"라고만 읽히고 그것이 참석 인원인지 식사 인원인지 알 수 없다. */}
+      <output id={id} aria-label={label} aria-live="polite" aria-atomic="true"
+              className="min-w-[2.5rem] text-center text-base tabular-nums"
+              style={{ color: 'var(--ink)' }}>
+        {value}
+      </output>
+      <button type="button" className={btn} style={btnStyle}
+              onClick={() => onChange(Math.min(max, value + 1))}
+              disabled={value >= max}
+              aria-label={`${label} 한 명 늘리기`}>+</button>
+    </div>
+  )
+}
+
 interface Props {
   /** 예식이 지났으면 폼 대신 마감 안내를 보여준다. */
   closed: boolean
@@ -58,11 +109,13 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
   }, [])
 
   // 참석 인원을 줄이면 식사 인원도 따라 줄인다. 서버가 거부할 조합을 애초에 못 만들게 한다.
-  // `partySize < 1`일 때 건너뛰는 가드가 핵심이다. `Number('')`는 0이므로, 하객이 인원을
-  // 1에서 3으로 고치려고 백스페이스를 누르는 순간 partySize가 0이 되고, 가드가 없으면
-  // 그 찰나에 mealCount가 0으로 확정된다. 서버는 0 <= 0 <= 3이라 정상 수락한다.
+  //
+  // 예전에는 여기에 `if (partySize < 1) return` 가드가 있었다. 자유 입력이던 시절
+  // 하객이 값을 지우면 `Number('')`가 0이 되어 그 찰나에 mealCount가 0으로 확정됐고,
+  // 서버는 0 <= 0 <= n이라 정상 수락해 식대가 조용히 모자랐다(F4). 스테퍼로 바꾼 뒤
+  // partySize는 1 미만이 될 수 없어 그 가드가 닿을 수 없는 코드가 됐다.
+  // **자유 입력으로 되돌린다면 가드도 함께 되살려야 한다.**
   useEffect(() => {
-    if (partySize < 1) return
     setMealCount((current) => Math.min(current, partySize))
   }, [partySize])
 
@@ -247,26 +300,22 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
       {attending === true && (
         <>
           <div>
-            <label htmlFor="rsvp-party" className="block text-sm mb-1">
-              본인 포함 총 참석 인원
-            </label>
-            <input id="rsvp-party" type="number" inputMode="numeric" min={1} max={PARTY_MAX}
-                   value={partySize}
-                   onChange={(e) => setPartySize(Number(e.target.value))}
-                   className={inputClass} style={inputStyle} />
+            <span className="block text-sm mb-2">본인 포함 총 참석 인원</span>
+            <Stepper id="rsvp-party" label="참석 인원"
+                     value={partySize} min={1} max={PARTY_MAX}
+                     onChange={setPartySize} />
             {errorFor('partySize') && (
               <p className="mt-1 text-xs" style={{ color: 'var(--danger)' }}>{errorFor('partySize')}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="rsvp-meal" className="block text-sm mb-1">
-              식사하실 인원
-            </label>
-            <input id="rsvp-meal" type="number" inputMode="numeric" min={0} max={partySize}
-                   value={mealCount}
-                   onChange={(e) => setMealCount(Number(e.target.value))}
-                   className={inputClass} style={inputStyle} />
+            <span className="block text-sm mb-2">식사하실 인원</span>
+            {/* max가 partySize라 식사 인원이 참석 인원을 넘는 조합이 애초에 만들어지지
+                않는다. 참석 인원을 줄이는 방향은 아래 이펙트가 따라 내린다. */}
+            <Stepper id="rsvp-meal" label="식사 인원"
+                     value={mealCount} min={0} max={partySize}
+                     onChange={setMealCount} />
             {errorFor('mealCount') && (
               <p className="mt-1 text-xs" style={{ color: 'var(--danger)' }}>{errorFor('mealCount')}</p>
             )}
