@@ -111,30 +111,30 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
     }
   }, [])
 
-  // 식사 인원을 참석 인원에 맞춘다. 두 방향의 규칙이 다르다.
-  //
-  // 손대지 않았으면 참석 인원을 그대로 따라간다. 3명이 온다고 고른 하객에게 식사
-  // 인원을 다시 세 번 누르게 할 이유가 없고, 안 누르고 넘어가면 식대가 모자란다.
-  // **모자라는 쪽이 남는 쪽보다 곤란하므로 기본값은 참석 인원이어야 한다.**
-  //
-  // 한 번이라도 직접 조정했다면 줄이는 방향으로만 따라간다. 아이 둘이 식사를 안 해
-  // 4명 중 2인분으로 낮춰둔 하객이 인원을 5명으로 고치는 순간 5인분으로 되돌아가면,
-  // 명시적으로 밝힌 값을 화면이 덮어쓰는 셈이다.
-  //
-  // 예전에는 여기에 `if (partySize < 1) return` 가드가 있었다. 자유 입력이던 시절
-  // 하객이 값을 지우면 `Number('')`가 0이 되어 그 찰나에 mealCount가 0으로 확정됐고,
-  // 서버는 0 <= 0 <= n이라 정상 수락해 식대가 조용히 모자랐다(F4). 스테퍼로 바꾼 뒤
-  // partySize는 1 미만이 될 수 없어 그 가드가 닿을 수 없는 코드가 됐다.
-  // **자유 입력으로 되돌린다면 가드도 함께 되살려야 한다.**
-  useEffect(() => {
-    setMealCount((current) => (mealTouched ? Math.min(current, partySize) : partySize))
-  }, [partySize, mealTouched])
-
   // 마운트 시각을 한 번만 기록한다. "수정" 경로로 돌아와도 아일랜드는 언마운트되지
   // 않으므로 값이 유지되고, 그때 elapsed는 더 커진다 — 오래 머문 하객을 막지 않는다.
   useEffect(() => {
     mountedAtRef.current = Date.now()
   }, [])
+
+  // 참석 인원과 식사 인원을 **같은 이벤트에서 함께** 바꾼다. useEffect로 따라가게 하면
+  // 참석 인원이 먼저 커밋되고 식사 인원은 다음 렌더에 갱신돼, 한 프레임 동안 화면에
+  // 어긋난 숫자가 보인다(프로덕션에서 실측: 참석 3인데 식사 2). 사람이 그 사이에
+  // 제출할 수는 없지만 잘못된 숫자가 보이는 것 자체가 문제다.
+  //
+  // 두 방향의 규칙이 다르다. 손대지 않았으면 참석 인원을 그대로 따라간다 — 3명이
+  // 온다고 고른 하객에게 식사 인원을 세 번 더 누르게 할 이유가 없고, 안 누르고
+  // 넘어가면 식대가 모자란다. **모자라는 쪽이 남는 쪽보다 곤란하다.**
+  // 한 번이라도 직접 조정했다면 줄이는 방향으로만 따라간다. 아이 둘이 식사를 안 해
+  // 4명 중 2인분으로 낮춰둔 하객이 인원을 5명으로 고치는 순간 5인분으로 되돌아가면,
+  // 명시적으로 밝힌 값을 화면이 덮어쓰는 셈이다.
+  //
+  // partySize를 바꾸는 경로가 이 함수뿐이라 이펙트 없이 성립한다. 다른 경로가
+  // 생기면 그쪽에서도 식사 인원을 함께 맞춰야 한다.
+  function setParty(next: number) {
+    setPartySize(next)
+    setMealCount((meal) => (mealTouched ? Math.min(meal, next) : next))
+  }
 
   const errorFor = (field: string) => fieldErrors.find((e) => e.field === field)?.message
 
@@ -314,7 +314,7 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
             <span className="block text-sm mb-2">본인 포함 총 참석 인원</span>
             <Stepper id="rsvp-party" label="참석 인원"
                      value={partySize} min={1} max={PARTY_MAX}
-                     onChange={setPartySize} />
+                     onChange={setParty} />
             {errorFor('partySize') && (
               <p className="mt-1 text-xs" style={{ color: 'var(--danger)' }}>{errorFor('partySize')}</p>
             )}

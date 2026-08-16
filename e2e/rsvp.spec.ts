@@ -71,6 +71,25 @@ test.describe('RSVP 제출', () => {
     await expect(meal).toHaveText('2')                  // 따라 내려옴
   })
 
+  // 참석 인원이 커밋된 **바로 그 순간** 식사 인원도 맞아야 한다. useEffect로 따라가게
+  // 하면 한 프레임 동안 어긋난 숫자가 화면에 보인다(프로덕션에서 실측: 참석 3인데 식사 2).
+  // toHaveText는 자동 재시도라 그 지연을 못 잡으므로, 여기서는 재시도 없이 즉시 읽는다.
+  test('참석 인원이 바뀌는 즉시 식사 인원도 같은 값이다 (한 프레임도 어긋나지 않는다)', async ({ page }) => {
+    await page.getByRole('button', { name: '참석', exact: true }).click()
+    const up = page.getByRole('button', { name: '참석 인원 한 명 늘리기' })
+
+    for (let expected = 2; expected <= 5; expected++) {
+      await up.click()
+      // 참석 인원이 새 값으로 커밋된 시점을 기다린 뒤, 같은 시점의 식사 인원을 읽는다.
+      await page.waitForFunction(
+        (n) => document.getElementById('rsvp-party')?.textContent?.trim() === n,
+        String(expected),
+      )
+      const meal = await page.locator('#rsvp-meal').textContent()
+      expect(meal?.trim(), `참석 ${expected}일 때 식사 인원`).toBe(String(expected))
+    }
+  })
+
   // 아이 둘이 식사를 안 해 4명 중 2인분으로 낮춰둔 하객이 인원을 고치는 순간
   // 5인분으로 되돌아가면, 명시적으로 밝힌 값을 화면이 덮어쓰는 셈이다.
   test('직접 낮춘 식사 인원은 참석 인원을 올려도 유지된다', async ({ page }) => {
