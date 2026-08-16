@@ -80,6 +80,9 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
   const [attending, setAttending] = useState<boolean | null>(null)
   const [partySize, setPartySize] = useState(1)
   const [mealCount, setMealCount] = useState(1)
+  // 하객이 식사 인원을 직접 건드렸는지. 건드리기 전에는 참석 인원을 따라가고,
+  // 한 번이라도 손대면 그 값을 지킨다 — 아래 이펙트 주석 참고.
+  const [mealTouched, setMealTouched] = useState(false)
   const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
 
@@ -108,7 +111,15 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
     }
   }, [])
 
-  // 참석 인원을 줄이면 식사 인원도 따라 줄인다. 서버가 거부할 조합을 애초에 못 만들게 한다.
+  // 식사 인원을 참석 인원에 맞춘다. 두 방향의 규칙이 다르다.
+  //
+  // 손대지 않았으면 참석 인원을 그대로 따라간다. 3명이 온다고 고른 하객에게 식사
+  // 인원을 다시 세 번 누르게 할 이유가 없고, 안 누르고 넘어가면 식대가 모자란다.
+  // **모자라는 쪽이 남는 쪽보다 곤란하므로 기본값은 참석 인원이어야 한다.**
+  //
+  // 한 번이라도 직접 조정했다면 줄이는 방향으로만 따라간다. 아이 둘이 식사를 안 해
+  // 4명 중 2인분으로 낮춰둔 하객이 인원을 5명으로 고치는 순간 5인분으로 되돌아가면,
+  // 명시적으로 밝힌 값을 화면이 덮어쓰는 셈이다.
   //
   // 예전에는 여기에 `if (partySize < 1) return` 가드가 있었다. 자유 입력이던 시절
   // 하객이 값을 지우면 `Number('')`가 0이 되어 그 찰나에 mealCount가 0으로 확정됐고,
@@ -116,8 +127,8 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
   // partySize는 1 미만이 될 수 없어 그 가드가 닿을 수 없는 코드가 됐다.
   // **자유 입력으로 되돌린다면 가드도 함께 되살려야 한다.**
   useEffect(() => {
-    setMealCount((current) => Math.min(current, partySize))
-  }, [partySize])
+    setMealCount((current) => (mealTouched ? Math.min(current, partySize) : partySize))
+  }, [partySize, mealTouched])
 
   // 마운트 시각을 한 번만 기록한다. "수정" 경로로 돌아와도 아일랜드는 언마운트되지
   // 않으므로 값이 유지되고, 그때 elapsed는 더 커진다 — 오래 머문 하객을 막지 않는다.
@@ -312,10 +323,10 @@ export default function RsvpForm({ closed, fallbackPhone }: Props) {
           <div>
             <span className="block text-sm mb-2">식사하실 인원</span>
             {/* max가 partySize라 식사 인원이 참석 인원을 넘는 조합이 애초에 만들어지지
-                않는다. 참석 인원을 줄이는 방향은 아래 이펙트가 따라 내린다. */}
+                않는다. 참석 인원을 따라 올리고 내리는 것은 위 이펙트가 맡는다. */}
             <Stepper id="rsvp-meal" label="식사 인원"
                      value={mealCount} min={0} max={partySize}
-                     onChange={setMealCount} />
+                     onChange={(next) => { setMealTouched(true); setMealCount(next) }} />
             {errorFor('mealCount') && (
               <p className="mt-1 text-xs" style={{ color: 'var(--danger)' }}>{errorFor('mealCount')}</p>
             )}

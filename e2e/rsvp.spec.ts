@@ -33,7 +33,7 @@ test.describe('RSVP 제출', () => {
     await page.getByRole('button', { name: '참석', exact: true }).click()
     await page.getByRole('button', { name: '참석 인원 한 명 늘리기' }).click()   // 1 → 2
     await expect(page.getByLabel('참석 인원', { exact: true })).toHaveText('2')
-    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('2')   // 클램프가 따라 올린 값이 아니라 초기값 유지
+    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('2')   // 참석 인원을 따라 올라간다
 
     // 서버는 폼이 뜬 뒤 3초가 지나야 사람으로 본다(허니팟과 함께 Turnstile을 대신하는
     // 봇 방어). 이 대기가 없으면 자동화가 사람보다 빨라 400을 받고, 그것이 계약 불일치로
@@ -55,20 +55,43 @@ test.describe('RSVP 제출', () => {
     await expect(page.getByLabel('식사 인원', { exact: true })).toBeHidden()
   })
 
-  test('참석 인원을 줄이면 식사 인원이 따라 줄어든다', async ({ page }) => {
+  // 손대지 않은 식사 인원은 참석 인원을 그대로 따라간다. 안 그러면 3명이 온다고 고른
+  // 하객이 식사 인원을 세 번 더 눌러야 하고, 안 누르고 넘어가면 식대가 모자란다.
+  test('식사 인원이 참석 인원을 따라 올라가고 내려온다', async ({ page }) => {
     await page.getByRole('button', { name: '참석', exact: true }).click()
     const partyUp = page.getByRole('button', { name: '참석 인원 한 명 늘리기' })
     const partyDown = page.getByRole('button', { name: '참석 인원 한 명 줄이기' })
-    const mealUp = page.getByRole('button', { name: '식사 인원 한 명 늘리기' })
+    const meal = page.getByLabel('식사 인원', { exact: true })
 
     for (let i = 0; i < 4; i++) await partyUp.click()   // 1 → 5
-    for (let i = 0; i < 4; i++) await mealUp.click()    // 1 → 5
-    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('5')
+    await expect(meal).toHaveText('5')                  // 따라 올라감
 
     for (let i = 0; i < 3; i++) await partyDown.click() // 5 → 2
-
     // 이 정방향 단언이 없으면 클램프를 통째로 지워도 테스트가 통과한다.
-    await expect(page.getByLabel('식사 인원', { exact: true })).toHaveText('2')
+    await expect(meal).toHaveText('2')                  // 따라 내려옴
+  })
+
+  // 아이 둘이 식사를 안 해 4명 중 2인분으로 낮춰둔 하객이 인원을 고치는 순간
+  // 5인분으로 되돌아가면, 명시적으로 밝힌 값을 화면이 덮어쓰는 셈이다.
+  test('직접 낮춘 식사 인원은 참석 인원을 올려도 유지된다', async ({ page }) => {
+    await page.getByRole('button', { name: '참석', exact: true }).click()
+    const partyUp = page.getByRole('button', { name: '참석 인원 한 명 늘리기' })
+    const mealDown = page.getByRole('button', { name: '식사 인원 한 명 줄이기' })
+    const meal = page.getByLabel('식사 인원', { exact: true })
+
+    for (let i = 0; i < 3; i++) await partyUp.click()   // 1 → 4
+    await expect(meal).toHaveText('4')
+
+    for (let i = 0; i < 2; i++) await mealDown.click()  // 4 → 2 (직접 조정)
+    await expect(meal).toHaveText('2')
+
+    await partyUp.click()                               // 4 → 5
+    await expect(meal).toHaveText('2')                  // 덮어쓰지 않는다
+
+    // 줄이는 방향은 그래도 따라간다 — 서버가 거부할 조합을 만들지 않기 위해서다.
+    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: '참석 인원 한 명 줄이기' }).click()
+    await expect(page.getByLabel('참석 인원', { exact: true })).toHaveText('1')
+    await expect(meal).toHaveText('1')
   })
 
   // 예전에는 자유 입력이라 하객이 칸을 비우는 찰나에 Number('')가 0이 되어 식사 인원이
