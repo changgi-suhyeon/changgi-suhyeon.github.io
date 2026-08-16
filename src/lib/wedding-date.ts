@@ -1,15 +1,13 @@
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 
-const WEEKDAY_EN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const
 const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'] as const
 
 export interface WeddingDateParts {
   year: number
   month: number
   day: number
-  /** 히어로의 장식 오버레이용. 예: 'SAT' */
-  weekdayEn: string
-  /** 문장 안에 쓰는 한글 요일. 예: '토' */
+  /** 한글 요일 한 글자. 예: '토'. 소비자가 '요일'을 붙여 쓴다 —
+   *  히어로는 '토요일', 공유 문구는 '토요일 오후 12시' 형태다. */
   weekdayKo: string
   /** 예: '오후 12시' — 분이 0이면 생략한다. */
   timeText: string
@@ -35,7 +33,6 @@ export function getWeddingDateParts(iso: string): WeddingDateParts {
     year: kst.getUTCFullYear(),
     month: kst.getUTCMonth() + 1,
     day: kst.getUTCDate(),
-    weekdayEn: WEEKDAY_EN[kst.getUTCDay()]!,
     weekdayKo: WEEKDAY_KO[kst.getUTCDay()]!,
     timeText: minute === 0 ? `${ampm} ${hour12}시` : `${ampm} ${hour12}시 ${minute}분`,
   }

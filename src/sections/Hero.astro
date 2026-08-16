@@ -4,7 +4,7 @@ import { getWeddingDateParts } from '../lib/wedding-date'
 
 // 표준시 처리와 요일·시각 문자열은 wedding-date.ts 한 곳에만 둔다.
 // og:description도 같은 원본에서 나오므로 여기서 따로 조립하면 갈라진다.
-const { year: y, month: m, day, weekdayEn: weekday, timeText } = getWeddingDateParts(wedding.date)
+const { year: y, month: m, day, weekdayKo, timeText } = getWeddingDateParts(wedding.date)
 ---
 <section class="shell pt-14 pb-12 text-center">
   <p class="font-sans-kr text-[11px] tracking-[0.3em]" style="color: var(--muted)">
@@ -19,7 +19,7 @@ const { year: y, month: m, day, weekdayEn: weekday, timeText } = getWeddingDateP
   <h1 class="font-serif-kr text-3xl tracking-[0.08em]" style="color: var(--ink)">{wedding.groom.name} <span class="text-lg align-middle" style="color: var(--muted)">·</span> {wedding.bride.name}</h1>
 
   <p class="mt-5 text-sm leading-loose">
-    {y}. {m}. {day}. {weekday} {timeText}<br />
+    {y}. {m}. {day}. {weekdayKo}요일 {timeText}<br />
     {wedding.venue.name} {wedding.venue.hall}
   </p>
 

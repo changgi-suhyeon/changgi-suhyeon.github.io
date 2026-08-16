@@ -9,7 +9,6 @@ describe('getWeddingDateParts', () => {
       year: 2026,
       month: 10,
       day: 31,
-      weekdayEn: 'SAT',
       weekdayKo: '토',
       timeText: '오후 12시',
     })
